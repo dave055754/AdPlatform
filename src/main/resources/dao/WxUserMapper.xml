@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.WxUserDao">
+	<!--插入或者更新wx用户的信息 -->
+	<insert id="inUpWxCustomInfo" useGeneratedKeys="true">
+		REPLACE INTO
+		t_user_wx
+		(`subscribe`,`openid`,`nickname`,`sex`,`city`,`country`,`province`,`language`,`headimgurl`,`subscribetime`,`unionid`,`remark`,`groupid`,`os_type`)
+		VALUES(#{subscribe},#{openid},#{nickname},#{sex},#{city},#{country},#{province},
+		#{language},#{headimgurl},#{subscribetime},#{unionid},#{remark},#{groupid},#{osType})
+	</insert>
+	
+	
+	<select id="getWxCustomInfo" resultType="com.wxc.adplatform.model.wx.WxCustomUser">
+		select *,os_type as osType from t_user_wx where openid=#{wxUserId}
+	</select>
+</mapper>

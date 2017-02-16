@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.SpDao">
+	
+	
+	<select id="getSpList" resultType="com.wxc.adplatform.model.Sp" >
+		select * from t_sp where ad_id = #{ad_id}
+	</select>
+	
+	<select id="getSpInfoList" resultType="com.wxc.adplatform.model.SpInfo" >
+		select t1.sp_id,t2.*,t3.type_name,t3.proportion from t_sp_type_relation t1,t_sp_type_value t2,t_sp_type t3 where t1.sp_id=#{sp_id} and t1.sp_type_value_id=t2.sp_type_value_id
+and t1.sp_type_id=t3.sp_type_id
+	</select>
+	
+	<select id="getPlatSpList" resultType="com.wxc.adplatform.model.Sp" >
+		select * from t_sp where ad_id = 0
+	</select>
+</mapper>

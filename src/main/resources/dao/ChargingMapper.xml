@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.ChargingDao">
+
+	<select id="isExistChargingByDate" resultType="Integer">
+		select count(id) from t_billing_record where open_id = #{open_id} and device_code = #{device_code} 
+		and billing_date = #{billing_date}  and cost_type = #{costType}
+	</select>
+	
+	<select id="isExistCharging" resultType="Integer">
+		select count(id) from t_billing_record where open_id = #{open_id} and device_code = #{device_code} and cost_type = #{costType}
+	</select>
+	
+	<select id="isExistClickCharging" resultType="Integer">
+		select count(id) from t_billing_record where open_id = #{open_id} and ad_id = #{ad_id} and cost_type = 0 and billing_type = 0
+	</select>
+	
+	<select id="isExistExposureCharging" resultType="Integer">
+		select count(id) from t_billing_record where open_id = #{open_id} and ad_id = #{ad_id} and cost_type = 2 and billing_type = 0
+	</select>
+	
+	<select id="isExistPrintCharging" resultType="Integer">
+		select count(id) from t_billing_record where open_id = #{open_id} and wx_public_id = #{wx_public_id} and cost_type = 1 and billing_type = 0
+	</select>
+	
+	<insert id="addCharging"   useGeneratedKeys="true" keyProperty="id">
+		insert into t_billing_record(user_id,ad_id,open_id,device_code,owner,cost_type,billing_type,cost,billing_date, billing_time,wx_public_id,city_code)
+		 values(#{userId},#{adId},#{openId},#{deviceCode},#{owner},#{costType},#{billingType},#{cost},#{billingDate},  now(),#{wxPublicId}, #{city_code})
+	</insert>
+	
+	<select id="getDeviceCityCode" resultType="String">
+		select device_city from t_device where device_code = #{device_code} 
+	</select>
+	
+	<select id="findClickBillingRecordByAdRecord" resultType="com.wxc.adplatform.model.BillingRecord">
+		select id,billing_type  as billingType,cost  from t_billing_record where open_id = #{open_id} and wx_public_id = #{wx_public_id}
+		 and cost_type = 1  limit 2
+	</select>
+	
+</mapper>

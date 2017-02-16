@@ -1,0 +1,874 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.AdminDao">
+
+	<resultMap type="com.wxc.adplatform.model.AdVO" id="adResultMapper">
+		<result property="id" column="id" />
+		<result property="uuid" column="uuid" />
+		<result property="appid" column="appid" />
+		<result property="name" column="name" />
+		<result property="startDate" column="start_date" />
+		<result property="endDate" column="end_date" />
+		<result property="platform" column="platform" />
+		<result property="adType" column="adtype" />
+		<result property="adScheduleId" column="ad_schedule_id" />
+		<result property="adUrl" column="ad_url" />
+		<result property="linkUrl" column="link_url" />
+		<result property="area" column="area" />
+		<result property="tag" column="tag" />
+		<result property="chargeType" column="charge_type" />
+		<result property="charge" column="charge" />
+		<result property="checkflag" column="checkflag" />
+		<result property="reason" column="reason" />
+		<result property="createUserId" column="create_user_id" />
+		<result property="updateUserId" column="update_user_id" />
+		<result property="createTime" column="create_time" />
+		<result property="updateTime" column="update_time" />
+		<result property="realname" column="realname" />
+	</resultMap>
+	
+	<resultMap type="com.wxc.adplatform.model.AdRecord" id="adRecord">
+		<result property="id" column="id" />
+		<result property="adId" column="ad_id" />
+		<result property="deviceId" column="device_id" />
+		<result property="wxUserId" column="wx_user_id" />
+		<result property="wxPublicId" column="wx_public_id" />
+		<result property="count" column="count" />
+		<result property="owner" column="owner" />
+		<result property="charge" column="charge" />
+		<result property="price" column="price" />
+		<result property="price_device" column="price_device" />
+		<result property="billingId" column="billing_id" />
+		<result property="billingIdDevice" column="billing_id_device" />
+		<result property="spArea" column="area" />
+		<result property="spSex" column="sex" />
+		<result property="spIndustry" column="industry" />
+		<result property="os" column="os" />
+		<result property="action" column="action" />
+		<result property="actionTime" column="action_time" />
+		
+	</resultMap>
+	
+	<select id="consumeList" resultType="com.wxc.adplatform.model.BillingRecord2">
+		select t1.day as billing_date,t2.name as ad_name, t2.platform as cost_type,t3.user_name,
+        sum(click_cost) as cost2,sum(fans_cost) as cost0, sum(exposure_cost) as cost1, sum(click) as count2, sum(fans) as count0, sum(exposure) as count1
+        from t_user_action_statistic t1 ,t_ad t2, t_custom_account t3
+		where t1.ad_id = t2.id and t2.create_user_id=t3.id	
+		<if test="startDate != null and startDate != ''">AND  t1.day BETWEEN  #{startDate} and #{endDate}</if>
+		group by t1.day, t1.ad_id
+		order by t1.day desc limit #{offset}, #{pageSize}
+	</select>
+		
+	<select id="countConsumeList" resultType="java.util.Map">
+		select *
+        from t_user_action_statistic t1 ,t_ad t2, t_custom_account t3
+		where t1.ad_id = t2.id and t2.create_user_id=t3.id	
+		<if test="startDate != null and startDate != ''">AND  t1.day BETWEEN  #{startDate} and #{endDate}</if>
+		group by t1.day, t1.ad_id
+	</select>
+	
+	<select id="findFinanceDetails" resultType="java.util.Map">
+		select t1.*, t2.user_name from t_finance t1,t_custom_account t2 where t1.user_id=t2.id
+		<if test="user_id != null and user_id != ''">
+			user_id = #{user_id}
+		</if> 
+		<if test="type != null and type != ''">
+			and type= #{type}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			and create_time &gt;= #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			and create_time &lt;= #{endDate}
+		</if>
+		order by t1.create_time desc limit #{offset}, #{pageSize}
+	</select>
+	
+	<select id="findDayAmount" resultType="Integer">
+	  <![CDATA[
+		select  sum(amount)  from t_finance 
+		   WHERE type=#{type} and TO_DAYS(NOW())-TO_DAYS(create_time)=#{dayBefore}
+	   ]]>
+	</select>
+	
+	<insert id="insertDayList" parameterType="com.wxc.adplatform.model.YesterdayList">
+	  <![CDATA[
+		insert into t_finance_day_list (consumeAmount, withdrawAmount, rechargeAmount,incomeAmount,day,create_time) 
+		values(#{yesterdayAmout.consumeAmount},#{yesterdayAmout.withdrawAmount},#{yesterdayAmout.rechargeAmount},#{yesterdayAmout.incomeAmount},
+		#{yesterdayAmout.day},#{yesterdayAmout.day} )
+		  ]]>
+	</insert>
+	
+	<insert id="delDayList" parameterType="com.wxc.adplatform.model.YesterdayList">
+	  <![CDATA[
+		delete  from  t_finance_day_list where TO_DAYS(day)-TO_DAYS(#{yesterdayAmout.day})=0
+		  ]]>
+    </insert>
+	
+	<select id="findFinanceDayList" resultType="com.wxc.adplatform.model.FinanceDayList">
+		select * from t_finance_day_list  WHERE day BETWEEN #{startDate} AND #{endDate}
+	</select>
+	
+	<select id="countDetails" resultType="Integer">
+		select count(*) from t_finance t1, t_custom_account t2 where t1.user_id = t2.id
+		<if test="type != null and type != ''">
+			and type= #{type}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			and create_time &gt;= #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			and create_time &lt;= #{endDate}
+		</if>
+	</select>
+	
+	
+	<select id="findNewAccounts" resultType="Integer">
+	  <![CDATA[
+		select count(id) from t_custom_account  where date(regist_time) = curdate()
+		and user_type = 'WEB'
+		]]>
+	</select>
+	
+	<select id="findRegisterAccounts" resultType="Integer">
+	  <![CDATA[
+		select count(id) from t_custom_account
+		where user_type = 'WEB'
+		]]>
+	</select>
+	
+	<select id="findLess30Accounts" resultType="Integer">
+	    <![CDATA[
+		select count(id) from t_custom_account  where balance<100000 
+		and user_type = 'WEB'
+		]]>
+	</select>
+	
+	<select id="findNoMoneyAccounts" resultType="Integer">
+	   <![CDATA[
+		select count(id) from t_custom_account  where balance<=0
+		and user_type = 'WEB'
+		]]>
+	</select>
+	
+	<select id="findAds" resultType="Integer">
+	   <![CDATA[
+		select count(id) from t_ad_schedule  where adflag = #{adFlag}
+		]]>
+	</select>
+	
+	<select id="findPublishAds" resultType="Integer">
+	   <!-- <![CDATA[
+		select count(id) from t_ad  where platform = #{platform} and checkflag=3
+		]]> -->
+		
+		select count(*)
+		from t_ad ta
+		join t_ad_schedule tas on ta.ad_schedule_id = tas.id
+		where ta.checkflag = 1 and curDate() &gt;= ta.start_date and curDate() &lt;= ta.end_date and ta.onoff = 1 and tas.onoff = 1
+		and ta.platform = #{platform} and tas.adflag = 0
+	</select>
+	
+	
+	<select id="findYesterdayTotalCost" resultType="Integer">
+	   <![CDATA[
+		select sum(exposure_cost)+sum(click_cost)+sum(fans_cost) from t_user_action_statistic   WHERE TO_DAYS(NOW())-TO_DAYS(day)=1
+		]]>
+	</select>
+	
+	<select id="findSumIncome" resultType="Integer">
+ 	    <![CDATA[
+		select sum(amount) from t_finance  where type = 'CONSUME'
+		]]>
+	</select> 
+	<select id="findYesterdayIncome" resultType="com.wxc.adplatform.model.YesterdayIncome">
+	   <![CDATA[
+		SELECT  sum(exposure_cost) as yesterdayExposureCost,
+		       sum(click_cost) as yesterdayClickCost ,
+		       sum(fans_cost) as  yesterdayPrintCost
+        FROM t_user_action_statistic 
+        WHERE TO_DAYS(NOW())-TO_DAYS(day)=1  
+        ]]>
+	</select>
+	
+	<select id="findSumStatistics" resultType="com.wxc.adplatform.model.AdminSumStatisticBean">
+	   <![CDATA[
+		SELECT sum(exposure) as exposuresSum , sum(click) as clickSum ,sum(fans) as printSum
+		   from t_user_action_statistic  WHERE day BETWEEN #{startDate} AND #{endDate}
+		]]>
+	</select>
+	
+	<select id="findStatisticList" resultType="com.wxc.adplatform.model.AdminStatisticBean">
+	   <![CDATA[
+		SELECT sum(exposure) as exposure , sum(click) as click ,sum(fans) as print,day
+		   FROM t_user_action_statistic  WHERE day BETWEEN #{startDate} AND #{endDate} group by day
+		]]>
+	</select>
+	
+	<select id="findTopStatictis" resultType="com.wxc.adplatform.model.TopStatistic">
+	   <![CDATA[
+		SELECT  sum(exposure_cost+fans_cost+click_cost) AS cost ,user_name AS userName , t3.id AS userId,count(t2.id) AS publshingAds
+		FROM t_user_action_statistic t1,  t_ad t2, t_custom_account t3
+		WHERE
+		    t1.ad_id = t2.id 
+		AND t2.create_user_id = t3.id
+		AND t2.platform = #{platform}
+		AND  t1.day BETWEEN  #{startDate} and #{endDate}
+		GROUP BY userId 
+		ORDER BY cost DESC LIMIT 10
+		]]>
+	</select>
+	
+	
+	<select id="findVerifyAdList" resultMap="adResultMapper">
+		select a.*,wp.wx_url wxUrl,wp.wx_qrcode wxQrcode,wp.wx_detail_url wxDetailUrl,wp.wx_article_url wxArticleUrl,
+		ca.realname
+		from t_ad a
+		left join t_wx_public wp on a.appid = wp.wx_appid
+		left join t_custom_account ca on a.create_user_id = ca.id
+		<where>
+			<trim suffixOverrides="and">
+				<if test="searchKey != null and searchKey != ''">
+					and a.name like "%"#{searchKey}"%"
+				</if>
+				<if test="checkflag == -1">
+					and a.checkflag != 0
+				</if>
+				<if test="checkflag != null and checkflag != -1">
+					and a.checkflag = #{checkflag}
+				</if>
+				<if test="startCreateTime != null and startCreateTime != ''">
+					and a.create_time &gt;= #{startCreateTime}
+				</if>
+				<if test="endCreateTime != null and endCreateTime != ''">
+					and a.create_time &lt;= #{endCreateTime}
+				</if>
+			</trim>
+		</where>
+		order by a.create_time desc limit #{offset}, #{pageSize}
+	</select>
+	
+	<select id="findRows" resultType="Integer">
+		select count(*) from t_ad
+		<where>
+			<trim suffixOverrides="and">
+				<if test="searchKey != null and searchKey != ''">
+					and name like "%"#{searchKey}"%"
+				</if>
+				<if test="checkflag == -1">
+					and checkflag != 0
+				</if>
+				<if test="checkflag != null and checkflag != -1">
+					and checkflag = #{checkflag}
+				</if>
+				<if test="startCreateTime != null and startCreateTime != ''">
+					and create_time &gt;= #{startCreateTime}
+				</if>
+				<if test="endCreateTime != null and endCreateTime != ''">
+					and create_time &lt;= #{endCreateTime}
+				</if>
+			</trim>
+		</where>
+	</select>
+	
+	<update id="approvalAd">
+		update t_ad set checkflag = #{checkflag},reason = #{reason} where id = #{id}
+	</update>
+	
+	<insert id="addNotice">
+		insert into t_notice(ad_id,user_id,notice_type,time, content)
+		values(#{ad_id},#{user_id}, #{notice_type}, #{time}, #{content})
+	</insert>
+	
+	<select id="findAdDetail" resultMap="adResultMapper">
+		select * from t_ad
+			<where>
+				<if test="id != null">
+					and id = #{id}
+				</if>
+			</where>
+	</select>
+	
+	<select id="findRecordAdIds" resultType="com.wxc.adplatform.model.StaticRecord">
+	 <![CDATA[
+		select DISTINCT ad_id, ad_schedule_id as schedule_id from t_user_action_record t1, t_ad t2
+		where t1.ad_id=t2.id
+		and action_time BETWEEN  #{timeStart} and #{timeEnd} 
+		  ]]>
+	</select>
+	
+	<select id="findTypeClicks" resultType="Integer">
+		select sum(count) from t_user_action_record 
+		where action = #{type}
+		<if test="adId != -1">	and ad_id= #{adId}</if>
+		<if test="device_code != null and device_code != ''">and device_id= #{device_code}</if>
+		and action_time BETWEEN  #{timeStart} and #{timeEnd} 
+	</select>
+	
+	<select id="findBillCost" resultType="Integer">
+		select  sum(cost) from t_billing_record 
+		where billing_type = #{billing_type}
+		<if test="adId != -1">	and ad_id= #{adId}</if>
+		<if test="device_code != null and device_code != ''">and device_code= #{device_code}</if>
+		and cost_type = #{costType}
+		and billing_time BETWEEN  #{timeStart} and #{timeEnd} 
+	</select>
+	
+	<select id="findBillTimes" resultType="Integer">
+		select  count(id) from t_billing_record 
+		where billing_type = #{billing_type}
+		<if test="adId != -1">	and ad_id= #{adId}</if>
+		<if test="device_code != null and device_code != ''">and device_code= #{device_code}</if>
+		and cost_type = #{costType}
+		and billing_time BETWEEN  #{timeStart} and #{timeEnd} 
+	</select>
+			
+	
+	<select id="findRecordDevceCodes" resultType="com.wxc.adplatform.model.DeviceStaticRecord">
+	   <![CDATA[
+		select DISTINCT device_id as device_code,t3.id as user_id, owner from t_user_action_record t1, t_device t2,
+		 t_custom_account t3
+		where t1.device_id=t2.device_code and t2.owner = t3.third_account
+		and action_time BETWEEN  #{timeStart} and #{timeEnd} 
+		]]>
+	</select>
+	
+	<insert id="insertDevice_income_statistic"  parameterType="com.wxc.adplatform.model.StaticYesterdayHourDevice">
+		insert into t_device_income_statistic (user_id,owner,device_code, day,time,exposure,exposure_income,exposure_all,click,
+		click_income,click_all,fans_income,fans, fans_all) values
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.user_id},#{item.owner},#{item.device_code},#{item.day},#{item.time},#{item.exposure},#{item.exposure_income},
+			#{item.exposure_all},#{item.click},#{item.click_income},#{item.click_all},#{item.fans_income},#{item.fans},#{item.fans_all})
+		</foreach>
+	</insert>
+	
+	 <insert id="insertStaticRecord"  parameterType="com.wxc.adplatform.model.StaticYesterdayHour">
+		insert into t_user_action_statistic (ad_id,schedule_id, `day`,`time`,exposure,
+		exposure_cost,click,click_cost,fans_cost,fans,exposure_all,click_all,fans_all) values
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.ad_id},#{item.schedule_id},#{item.day},#{item.time},
+			#{item.exposure},#{item.exposure_cost},#{item.click},#{item.click_cost},#{item.fans_cost},#{item.fans},#{item.exposure_all}
+			,#{item.click_all},#{item.fans_all})
+		</foreach>
+	</insert>
+	
+	<insert id="insertWX_statistic"  parameterType="com.wxc.adplatform.model.StaticYesterdayHourWX">
+		insert into t_device_wx_income_statistic (owner,wx_public_id, day,time,exposure,exposure_income,exposure_all,click,
+		click_income,click_all,fans_income,fans, fans_all) values
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.owner},#{item.wx_public_id},#{item.day},#{item.time},#{item.exposure},#{item.exposure_income},
+			#{item.exposure_all},#{item.click},#{item.click_income},#{item.click_all},#{item.fans_income},#{item.fans},#{item.fans_all})
+		</foreach>
+	</insert>
+	
+	<insert id="insertDayAdOwner"  parameterType="com.wxc.adplatform.model.StaticOwnerAdIncome">
+		insert into t_ad_owner_statistic (owner,ad_id, day,time,people_count,action,amount,price_device_amount,create_time,update_time) values
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.owner},#{item.ad_id},#{item.day},#{item.time},#{item.people_count},#{item.action},#{item.amount},#{item.price_device_amount},now(),now() )
+		</foreach>
+	</insert>
+	
+<!-- public AdOwnerBean findAdOwnerByDay(
+			@Param("adId") int adId, 
+			@Param("owner") String owner, 
+			@Param("day") Date day);
+	
+	public Integer insertAdOwnerDay(
+			@Param("staticOwnerAdIncome") StaticOwnerAdIncome staticOwnerAdIncome );
+	
+	public Integer updateAdOwnerDay(
+			@Param("staticOwnerAdIncome") StaticOwnerAdIncome staticOwnerAdIncome ); -->
+	
+	<select id="findAdOwnerByDay" resultType="com.wxc.adplatform.model.AdOwnerBean">
+	       select * from t_ad_owner_statistic where owner= #{owner} and ad_id=#{adId} 
+	       and  day=#{day}
+	</select>
+	
+	<insert id="insertAdOwnerDay"  parameterType="com.wxc.adplatform.model.StaticOwnerAdIncome">
+	   insert into t_ad_owner_statistic (owner,ad_id, day,people_count,action,amount,price_device_amount,create_time,update_time) values
+			(#{staticOwnerAdIncome.owner},#{staticOwnerAdIncome.ad_id},#{staticOwnerAdIncome.day},
+			#{staticOwnerAdIncome.people_count},#{staticOwnerAdIncome.action},#{staticOwnerAdIncome.amount},#{staticOwnerAdIncome.price_device_amount},now(),now() )
+	</insert>
+	
+	<update id="updateAdOwnerDay"  parameterType="com.wxc.adplatform.model.StaticOwnerAdIncome">
+	        update t_ad_owner_statistic  set people_count=people_count + #{staticOwnerAdIncome.people_count}, 
+	              amount=amount + #{staticOwnerAdIncome.amount}, 
+	              price_device_amount=price_device_amount+#{staticOwnerAdIncome.price_device_amount}
+	        where owner= #{staticOwnerAdIncome.owner} and ad_id=#{staticOwnerAdIncome.ad_id}
+	             and  day=#{staticOwnerAdIncome.day}
+	</update>
+	
+	<select id="findSchedulePrvovinceDay"  resultType="com.wxc.adplatform.model.ProvinceBean">
+	     select * from t_province_statistic where schedule_id= #{sheduleId} and province_code=#{provinceCode} 
+	       and  day=#{day}
+	</select>
+	
+	<insert id="insertPrvovinceDay"  parameterType="com.wxc.adplatform.model.StaticOwnerAdIncome">
+	  insert into t_province_statistic (schedule_name,schedule_id, province_code,province_name,people_count,day,create_time,update_time) values
+			(#{staticOwnerAdIncome.scheduleName},#{staticOwnerAdIncome.schedule_id},#{staticOwnerAdIncome.provinceCode},
+			#{staticOwnerAdIncome.provinceName},#{staticOwnerAdIncome.people_count},#{staticOwnerAdIncome.day},now(),now() )
+	</insert>
+	
+	<update id="updatePrvovinceDay"  parameterType="com.wxc.adplatform.model.StaticOwnerAdIncome">
+	  update t_province_statistic  set people_count=people_count + #{staticOwnerAdIncome.people_count}
+	        where schedule_id= #{staticOwnerAdIncome.schedule_id} and province_code=#{staticOwnerAdIncome.provinceCode}
+	             and  day=#{staticOwnerAdIncome.day}
+	</update>
+	
+	<delete id="deleteCurHour">
+		delete from t_user_action_statistic where `day`=#{dayTime} and `time`=#{hour}
+	</delete>
+	
+	<delete id="deleteIncomeCurHour">
+		delete from t_device_income_statistic where `day`=#{dayTime} and `time`=#{hour}
+	</delete>
+	
+	<delete id="deleteCurHourWX">
+		delete from t_device_wx_income_statistic where `day`=#{dayTime} and `time`=#{hour}
+	</delete>
+	
+	<delete id="deleteCurDayAdOwner">
+		delete from t_ad_owner_statistic  where `day`=#{dayTime} and  `time`=#{hour}
+	</delete>
+	
+	<delete id="deleteCurDayAdOwnerByDay">
+		delete from t_ad_owner_statistic  where `day`=#{dayTime} 
+	</delete>
+	
+	<delete id="deleteCurDayProvinceByDay">
+		delete from t_province_statistic  where `day`=#{dayTime} 
+	</delete>
+	
+	
+	<select id="getOwnerStatistic" resultType="com.wxc.adplatform.model.StaticYesterdayHourDevice">
+	   <![CDATA[
+		select sum(exposure_income) as exposure_income, sum(click_income) as click_income,
+		sum(fans_income) as fans_income from t_device_income_statistic
+		where TO_DAYS(NOW())-TO_DAYS(day)=1 and owner = #{owner}
+		]]>
+	</select>
+	
+	<select id="ownerStatisticByAll" resultType="com.wxc.adplatform.model.StaticYesterdayHourDevice">
+	   <![CDATA[
+		select sum(exposure_income) as exposure_income, sum(click_income) as click_income,
+		sum(fans_income) as fans_income from t_device_income_statistic
+		where day=#{day}
+		]]>
+	</select>
+	
+	<select id="findUserIdByStatistic" resultType="Integer">
+		select DISTINCT(t2.create_user_id) from t_user_action_statistic t1 left join t_ad t2 on t1.ad_id=t2.id 
+		where t1.day=#{dayTime}
+	</select>
+	
+	
+	<select id="findFinanceIncomeByUserId"  resultType="String">
+		select DISTINCT(t1.`owner`) from t_device_income_statistic t1
+		where t1.day=#{dayTime}
+	</select>
+	
+	
+	<select id="findFinanceCostByUserId"  resultType="Integer">
+		select sum(t1.`create_user_id`) from t_device_income_statistic t1
+		where t1.day=#{dayTime}
+	</select>
+	
+	<insert id="addFinanceRecord"  >
+		insert into t_finance (user_id,amount,type, create_time,update_time) values
+		<foreach collection="list" item="item" index="index" separator=",">
+			(#{item.userId},#{item.amount},#{item.type},#{item.create_time},#{item.update_time})
+		</foreach>
+	</insert>
+	
+	<delete id="delFinanceRecord"  >
+	    <![CDATA[
+		  delete  from  t_finance 
+		  where TO_DAYS(now())-TO_DAYS(create_time)=#{dayBefore}
+		  and type = #{type}
+		  ]]>
+	</delete>
+	
+		
+	<select id="calDeviceOwnerIncome"  resultType="com.wxc.adplatform.model.Finance">	
+		select sum(fans_income)+sum(click_income)+sum(exposure_income) as amount, t1.owner  from t_device_income_statistic t1 
+		where TO_DAYS(now())-TO_DAYS(t1.day)=#{dayBefore}
+		group by t1.owner
+	</select>
+	
+	<select id="calGGZconsume"  resultType="com.wxc.adplatform.model.Finance">	
+		select sum(fans_cost)+sum(click_cost)+sum(exposure_cost) as amount, t2.create_user_id as userId  from t_user_action_statistic t1 ,t_ad t2
+		where t1.ad_id = t2.id
+	    and	TO_DAYS(now())-TO_DAYS(t1.day)=#{dayBefore}
+		group by  t2.create_user_id
+	</select>
+	
+	<update id="updateDateYesterdayCost"  >
+		update t_custom_account set yesterday_cost = #{cost} where id = #{userId}
+	</update>
+	
+	<select id="countCustoms" resultType="Integer">
+		select count(id) from t_custom_account where 1=1
+		<if test="startDate != null and startDate != ''">
+			and regist_time &gt;= #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			and regist_time &lt;= #{endDate}
+		</if>
+		<if test="role != null and role != ''">and role= #{role}</if>
+		<if test="searchName != null and searchName != ''">
+			and (realname like "%"#{searchName}"%" or user_name like "%"#{searchName}"%")
+		</if>
+	</select>
+	
+	<select id="findCustoms" resultType="com.wxc.adplatform.model.Custom">
+		select * from t_custom_account where 1=1 
+		<if test="startDate != null and startDate != ''">
+			and regist_time &gt;= #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			and regist_time &lt;= #{endDate}
+		</if>
+		<if test="role != null and role != ''">
+			and role= #{role}
+		</if>
+		<if test="searchName != null and searchName != ''">
+			and (realname like "%"#{searchName}"%" or user_name like "%"#{searchName}"%")
+		</if>
+		order by balance desc,regist_time desc limit #{offset},#{pageSize} 
+	</select>
+	
+	<select id="countRechargeLogs" resultType="Integer">
+		select count(id) from t_finance where 1=1
+		and   (type = 'HAND_RECHARGE' or type='RECHARGE')
+		<if test="userID != null and userID != ''">and user_id= #{userID}</if>
+	</select>
+	
+	<update id="addBalance" >
+		update  t_custom_account  set balance = balance+#{amount}
+		where id = #{userID}
+	</update>
+	
+	
+	<insert id="addHandInputLog">
+		insert into t_finance (user_id,amount,type, create_time,update_time,transaction_id,operater_user ) values
+		(#{userID},#{amount},'HAND_RECHARGE',now(),now(), #{transaction_id}, #{operater})
+	</insert>
+	
+	<select id="getLogs"  resultType="java.util.Map">
+		select f.*, t2.user_name  from t_finance f, t_custom_account t2 
+		where f.user_id = t2.id
+		and   (type = 'HAND_RECHARGE' or type='RECHARGE')
+		<if test="operater_name != null and operater_name != ''">and operater_user= #{operater_name}</if>
+		<if test="userID != null and userID != ''">and user_id= #{userID}</if>
+		<if test="startDate != null and startDate != ''">and (create_time BETWEEN #{startDate} AND #{endDate})</if>
+		limit #{offset},#{pageSize} 
+	</select>
+	
+	<select id="select_transaction_id"  resultType="Integer">
+		select f.id from t_finance f
+		where f.transaction_id =#{transaction_id}
+	</select>
+	
+	<update id="updateAdPriority">
+		update t_ad set priority = #{priority} where id = #{adId}
+	</update>
+	
+	<select id="withdrawCount" resultType="Integer">
+		select count(id) from t_withdraw where 1=1
+		<if test="startDate != null and startDate != ''">and (create_time BETWEEN #{startDate} AND #{endDate})</if>
+	</select>
+	
+	<select id="withdrawList" resultType="java.util.Map">
+		select * from t_withdraw t1 left join t_custom_account t2 on t1.user_id = t2.id  where 1=1 
+		<if test="startDate != null and startDate != ''">and (create_time BETWEEN #{startDate} AND #{endDate})</if>
+		limit #{offset},#{pageSize} 
+	</select>
+	
+	<update id="withdrawVertify">
+		update  t_withdraw set status = #{status}, withdraw_reason= #{withdraw_reason}, remark = #{remark}
+		where order_id = #{order_id}
+	</update>
+	
+	<select id="getHalfHourAdRecordCount" resultType="Integer">
+		select count(id) from t_user_action_record
+		where action_time BETWEEN  #{timeStart} and #{timeEnd} 
+	</select>
+	
+	<select id="getFansAdRecordCount" resultType="Integer">
+		select count(id) from t_user_action_record
+		where action_time BETWEEN  #{timeStart} and #{timeEnd} and charge=1
+	</select>
+	
+	<select id="getHalfHourAdRecord" resultMap="adRecord">
+		select * from t_user_action_record
+		where action_time BETWEEN  #{timeStart} and #{timeEnd} limit #{begin},#{count}
+	</select>
+	
+	<select id="getHalfAdRecordByCheck" resultMap="adRecord">
+		select * from t_user_action_record
+		where action_time BETWEEN  #{timeStart} and #{timeEnd} 
+		and charge=1
+		ORDER BY action_time limit #{begin},#{count}
+	</select>
+	
+	<select id="findAdRecordByBillingId" resultMap="adRecord">
+		select * from t_user_action_record  where billing_id = #{billingId} limit 1
+	</select>
+	
+	<select id="findAdRecordByBillingIdDevice" resultMap="adRecord">
+		select * from t_user_action_record  where billing_id_device = #{billingId} limit 1
+	</select>
+	
+	<select id="getAdRecord"  resultMap="adRecord">
+		select * from t_user_action_record
+		order by id limit #{start},#{length}
+	</select>
+	
+	<select id="getAdminTodayIncome" resultType="java.lang.Double">
+		select sum(click_income + fans_income) / 100 from t_device_income_statistic
+		where owner = #{owner} and day = curdate()
+	</select>
+	
+	<select id="getAllAdScheduleIdByUserId" resultType="java.lang.Integer">
+		select id from t_ad_schedule where create_user_id = #{userID}
+	</select>
+
+	<update id="modifyVertifyStatus" >
+		update  t_finance t1  set vertifyed = 0
+		where user_id = #{userId} 
+		and TO_DAYS(#{actionTime})-TO_DAYS(t1.create_time)=0
+	</update>
+	
+	<select id="getIncomeAndSbzincome" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where (type = 'INCOME' or type = 'SBZ_INCOME')
+	</select>
+	
+	<select id="getWithdrawAmount" resultType="java.lang.Integer">
+		select sum(amount) from t_withdraw
+	</select>
+	
+	<select id="yesAdConsume" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'CONSUME'
+		and create_time between #{yesDateStrStart} and #{yesDateStrEnd}
+	</select>
+	
+	<select id="yesRecharge" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where (type = 'RECHARGE' or type = 'HAND_RECHARGE')
+		and create_time between #{yesDateStrStart} and #{yesDateStrEnd}
+	</select>
+	
+	<select id="yesIncome" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'INCOME'
+		and create_time between #{yesDateStrStart} and #{yesDateStrEnd}
+	</select>
+	
+	<select id="yesPicIncome" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'SBZ_INCOME'
+		and create_time between #{yesDateStrStart} and #{yesDateStrEnd}
+	</select>
+	
+	<select id="yesSJHB" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'SJ_INCOME'
+		and create_time between #{yesDateStrStart} and #{yesDateStrEnd}
+	</select>
+	
+	<select id="yesAdWithdraw" resultType="java.lang.Integer">
+		select sum(amount) from t_withdraw  where (status = 'SUCCESS' or status = 'VERTIFYING')
+		and create_time between #{yesDateStrStart} and #{yesDateStrEnd}
+	</select>
+	
+	<select id="getFeeSplitListRows" resultType="java.lang.Integer">
+		select count(m) from (
+			select count(b.id) m
+			from t_ad a
+			left join t_ad_owner_statistic b on a.id = b.ad_id
+			left join t_wx_public c on a.appid = c.wx_appid
+			<where>
+				<trim suffixOverrides="and">
+					<if test="searchName != null and searchName != ''">
+						and c.wx_name like "%"#{searchName}"%"
+					</if>
+					<if test="startDate != null and startDate != ''">
+						and b.day &gt;= #{startDate}
+					</if>
+					<if test="endDate != null and endDate != ''">
+						and b.day &lt;= #{endDate}
+					</if>
+				</trim>
+			</where>
+			group by a.id
+		) m
+	</select>
+	
+	<select id="getFeeSplitList" resultType="com.wxc.adplatform.model.FeeSlipt">
+		select a.id adid,c.wx_name adname,a.adtype adtype,sum(b.price_device_amount) feeSliptAmount,
+		sum(b.people_count) printAmount,a.create_user_id adser,b.id id
+		from t_ad a
+		left join t_ad_owner_statistic b on a.id = b.ad_id
+		left join t_wx_public c on a.appid = c.wx_appid
+		<where>
+			<trim suffixOverrides="and">
+				<if test="searchName != null and searchName != ''">
+					and c.wx_name like "%"#{searchName}"%"
+				</if>
+				<if test="startDate != null and startDate != ''">
+					and b.day &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and b.day &lt;= #{endDate}
+				</if>
+			</trim>
+		</where>
+		group by a.id order by a.create_time desc limit #{offset}, #{pageSize}
+	</select>
+	
+	<select id="getAdserFeeSplitDetailRows" resultType="java.lang.Integer">
+		select count(m) from (
+			select count(a.id) m
+			from t_ad_owner_statistic a 
+			left join t_ad b on a.ad_id = b.id
+			<where>
+				<trim suffixOverrides="and">
+					<if test="startDate != null and startDate != ''">
+						and a.day &gt;= #{startDate}
+					</if>
+					<if test="endDate != null and endDate != ''">
+						and a.day &lt;= #{endDate}
+					</if>
+					<if test="adid != null">
+						and a.ad_id = #{adid}
+					</if>
+					<if test="owner != null and owner != ''">
+						and a.owner = #{owner}
+					</if>
+				</trim>
+			</where>
+			group by a.day,a.ad_id
+		) m
+	</select>
+	
+	<select id="getAdserFeeSplitDetail" resultType="com.wxc.adplatform.model.FeeSlipt">
+		select b.id adid,c.wx_name adname,b.adtype adtype,sum(a.price_device_amount) feeSliptAmount,sum(a.people_count) printAmount,a.day day
+		from t_ad_owner_statistic a 
+		left join t_ad b on a.ad_id = b.id
+		left join t_wx_public c on b.appid = c.wx_appid
+		<where>
+			<trim suffixOverrides="and">
+				<if test="startDate != null and startDate != ''">
+					and a.day &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and a.day &lt;= #{endDate}
+				</if>
+				<if test="adid != null">
+					and a.ad_id = #{adid}
+				</if>
+				<if test="owner != null and owner != ''">
+					and a.owner = #{owner}
+				</if>
+			</trim>
+		</where>
+		group by a.day,a.ad_id
+		order by a.day desc
+		<if test="offset != null and pageSize != null">
+			limit #{offset}, #{pageSize}
+		</if>
+	</select>
+	
+	<select id="getSbzFeeSplitDetailRows" resultType="java.lang.Integer">
+		select count(a.id)
+		from t_ad a
+		left join t_ad_owner_statistic b on a.id = b.ad_id
+		<where>
+			<trim suffixOverrides="and">
+				<if test="startDate != null and startDate != ''">
+					and a.create_time &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and a.create_time &lt;= #{endDate}
+				</if>
+			</trim>
+		</where>
+	</select>
+	
+	<select id="getSbzFeeSplitDetail" resultType="com.wxc.adplatform.model.FeeSlipt">
+		select a.id adid,a.name adname,a.adtype adtype,b.price_device_amount feeSliptAmount,b.people_count printAmount
+		from t_ad a
+		left join t_ad_owner_statistic b on a.id = b.ad_id
+		<where>
+			<trim suffixOverrides="and">
+				<if test="startDate != null and startDate != ''">
+					and a.create_time &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and a.create_time &lt;= #{endDate}
+				</if>
+			</trim>
+		</where>
+		order by a.create_time desc limit #{offset}, #{pageSize}
+	</select>
+	
+	<select id="sbzFeeSplit" resultType="com.wxc.adplatform.model.FeeSlipt">
+		select a.id adid,a.create_user_id adser,d.owner owner,d.org_id orgid,
+		d.org_name orgname,sum(b.price_device_amount) feeSliptAmount,sum(b.people_count) printAmount
+		from t_ad a
+		left join t_ad_owner_statistic b on a.id = b.ad_id
+		<!-- left join t_custom_account c on c.third_account = b.owner -->
+		left join t_custom_account_extend d on b.owner = d.owner
+		<where>
+			<trim suffixOverrides="and">
+				<if test="startDate != null and startDate != ''">
+					and b.day &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and b.day &lt;= #{endDate}
+				</if>
+				<if test="adid != null">
+					and b.ad_id = #{adid}
+				</if>
+			</trim>
+		</where>
+		group by d.owner
+	</select>
+	
+	<select id="getOwnerAmount" resultType="java.lang.Integer">
+		select count(distinct(b.owner)) ownerAmount from t_ad_owner_statistic b
+		<where>
+			<trim suffixOverrides="and">
+				<if test="startDate != null and startDate != ''">
+					and b.day &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and b.day &lt;= #{endDate}
+				</if>
+				<if test="adid != null">
+					and b.ad_id = #{adid}
+				</if>
+			</trim>
+		</where>
+	</select>
+	
+	<select id="getExportSbzFeeSplit" resultType="com.wxc.adplatform.model.FeeSlipt">
+		select a.id adid,d.wx_name adname,c.org_id orgid,c.org_name orgname,b.day day,
+		sum(b.price_device_amount) feeSliptAmount,sum(b.people_count) printAmount
+		from t_ad a
+		left join t_ad_owner_statistic b on a.id = b.ad_id
+		left join t_custom_account_extend c on b.owner = c.owner
+		left join t_wx_public d on a.appid = d.wx_appid
+		<where>
+			<trim suffixOverrides="and">
+				<if test="startDate != null and startDate != ''">
+					and b.day &gt;= #{startDate}
+				</if>
+				<if test="endDate != null and endDate != ''">
+					and b.day &lt;= #{endDate}
+				</if>
+			</trim>
+		</where>
+		group by b.ad_id,b.owner,b.day
+	</select>
+	
+</mapper>

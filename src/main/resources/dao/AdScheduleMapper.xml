@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.AdScheduleDao">
+
+	<resultMap type="com.wxc.adplatform.model.AdScheduleVO" id="adScheduleResultMapper">
+		<result property="id" column="id" />
+		<result property="name" column="name" />
+		<result property="quota" column="quota" />
+		<result property="exposure" column="exposure" />
+		<result property="click" column="click" />
+		<result property="cost" column="cost" />
+		<result property="print" column="print" />
+		<result property="adflag" column="adflag" />
+		<result property="onoff" column="onoff" />
+		<result property="amount" column="amount" />
+		<result property="createUserId" column="create_user_id" />
+		<result property="updateUserId" column="update_user_id" />
+		<result property="createTime" column="create_time" />
+		<result property="updateTime" column="update_time" />
+	</resultMap>
+	
+	<!-- 广告计划列表 -->
+	<select id="findAdScheduleList" resultMap="adScheduleResultMapper">
+		
+		select a.id,a.name,a.onoff,a.adflag,a.quota,sum(uas.click) click,sum(uas.exposure) exposure,sum(uas.fans) print,(sum(uas.click_cost) + sum(uas.exposure_cost) + sum(uas.fans_cost)) cost
+		from t_ad_schedule a
+		left join t_user_action_statistic uas on a.id = uas.schedule_id
+		<if test="startCreateTime != null and startCreateTime != ''">
+			and uas.day &gt;= #{startCreateTime}
+		</if>
+		<if test="endCreateTime != null and endCreateTime != ''">
+			and uas.day &lt; #{endCreateTime}
+		</if>
+		<where>
+			<trim suffixOverrides="and">
+				<if test="loginUserId != null">
+					and a.create_user_id = #{loginUserId}
+				</if>
+				<if test="searchName != null and searchName != ''">
+					and a.name like  "%"#{searchName}"%"
+				</if>
+				<!-- 
+				<if test="startCreateTime != null and startCreateTime != ''">
+					and a.update_time &gt;= #{startCreateTime}
+				</if>
+				<if test="endCreateTime != null and endCreateTime != ''">
+					and a.update_time &lt;= #{endCreateTime}
+				</if>
+				 -->
+			</trim>
+		</where>
+		group by a.id order by a.update_time desc limit #{offset}, #{pageSize}
+	</select>
+	
+	<select id="findRows" resultType="java.lang.Integer">
+		select count(*) from t_ad_schedule
+		<where>
+			<trim suffixOverrides="and">
+				<if test="loginUserId != null">
+					AND create_user_id = #{loginUserId}
+				</if>
+				<if test="searchName != null and searchName != ''">
+					and a.name like  "%"#{searchName}"%"
+				</if>
+				<!-- 
+				<if test="startCreateTime != null and startCreateTime != ''">
+					and create_time &gt;= #{startCreateTime}
+				</if>
+				<if test="endCreateTime != null and endCreateTime != ''">
+					and create_time &lt;= #{endCreateTime}
+				</if>
+				 -->
+			</trim>
+		</where>
+	</select>
+	
+	<insert id="addAdSchedule">
+		insert into t_ad_schedule(name,quota,create_user_id, create_time)
+		values(#{name}, #{quota}, #{loginUserId}, #{createTime})
+	</insert>
+	
+	<update id="updateAdSchedule">
+		update t_ad_schedule set name = #{name},quota = #{quota}
+		where id = #{id} and create_user_id = #{loginUserId}
+	</update>
+	
+	<update id="onoff">
+		update t_ad_schedule set onoff = #{onoff}
+		where id = #{id} and create_user_id = #{loginUserId}
+	</update>
+	
+	<select id="findName" resultType="java.lang.String">
+		select name from t_ad_schedule where name = #{name} and create_user_id = #{loginUserId}
+	</select>
+	
+	<select id="findAdScheduleById" resultType="com.wxc.adplatform.model.AdSchedule">
+		select * from t_ad_schedule where id = #{adscheduleId}
+	</select>
+	
+	<update id="editAdScheduleClickPlus">
+		update t_ad_schedule set click_plus = #{click_plus}
+		where id = #{adscheduleId}
+	</update>
+	
+	<update id="editAdSchedulePrintPlus">
+		update t_ad_schedule set print_plus = #{print_plus}
+		where id = #{adscheduleId}
+	</update>
+	
+	<update id="editAdScheduleExposurePlus">
+		update t_ad_schedule set charge_plus = #{charge_plus}
+		where id = #{adscheduleId}
+	</update>
+	
+	<select id="getAllCount" resultType="java.lang.Integer">
+		select sum(charge_plus) + sum(click_plus) + sum(print_plus) from t_ad_schedule where id = #{adScheduleId}
+	</select>
+	
+	<select id="getLockBalance" resultType="java.lang.Integer">
+		select lock_amount   from t_custom_account where id = #{userId}
+	</select>
+	
+	<update id="updateAdflag">
+		update t_ad_schedule set adflag = #{adflag} where id = #{adScheduleId}
+	</update>
+	
+	<update id="closeAllAdScheduleByUserId">
+		update t_ad_schedule set adflag = 1 where create_user_id= #{userId}
+	</update>
+	
+	<update id="updateChargePlus">
+		update t_ad_schedule set charge_plus = charge_plus + #{charge} where id = #{adScheduleId}
+	</update>
+	
+	<update id="updateAdScheduleFlag">
+		update t_ad_schedule set adflag = 0 where create_user_id = (select user_id from t_custom_trade where cp_order_id = #{out_trade_no})
+	</update>
+	
+	<select id="findUpdateName" resultType="java.lang.String">
+		select name from t_ad_schedule where name = #{name} and create_user_id = #{loginUserId} and id != #{id}
+	</select>
+	
+	<select id="getAllOffAdschedule" resultType="java.lang.Integer">
+		select id from t_ad_schedule where onoff = 0 or adflag = 1
+	</select>
+	
+	<select id="getAllOffAd" resultType="java.lang.String">
+		select appid from t_ad where onoff = 0
+	</select>
+	
+	
+	
+	<!-- 有优化空间 -->
+	<select id="getPrintPlusByScheduleId" resultType="java.lang.Integer">
+		select (sum(uas.click_cost) + sum(uas.exposure_cost) + sum(uas.fans_cost)) cost
+		from t_ad a
+		left join t_user_action_statistic uas on a.id = uas.ad_id
+		where a.ad_schedule_id = #{scheduleId}
+	</select>
+	
+	
+</mapper>

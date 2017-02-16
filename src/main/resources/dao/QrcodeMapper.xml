@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.QrcodeDao">
+	<resultMap type="com.wxc.adplatform.model.Qrcode" id="qrcode">
+		<result property="id" column="id"/>
+		<result property="code" column="code"/>
+		<result property="qrcodeUrl" column="qrcode_url"/>
+		<result property="deviceCode" column="device_code"/>
+		<result property="bindStatus" column="bind_status"/>
+	</resultMap>
+
+    <!-- 
+	<select id="getQrcodeList" resultMap="qrcode">
+		select * from t_qrcode where bind_status = 0
+	</select>
+	 -->
+	 
+	<update id="bindQrcode">
+		update t_qrcode set device_code = #{devicecode},bind_status = 1,create_time = now()
+		where code = #{code}
+	</update>
+	
+	<select id="getUnbindedQrcode" resultMap="qrcode">
+		select code,qrcode_url from t_qrcode
+		where bind_status = 0 and (device_code is null || device_code = '') order by id limit 1
+	</select>
+	
+	<select id="getDeviceCode" resultMap="qrcode">
+		select code,device_code,qrcode_url from t_qrcode where device_code = #{deviceCode}
+	</select>
+	
+	<select id="getDeviceCodeList" resultMap="qrcode">
+		select code,device_code,qrcode_url from t_qrcode where device_code = #{deviceCode}
+	</select>
+	
+	
+	<select id="findNoBindQrcode" resultType="Integer">
+		select count(id) from t_qrcode where bind_status = 0
+	</select>
+	
+	<insert id="saveQrcode">
+		insert into t_qrcode(code,qrcode_url,bind_status)
+		values(#{code},#{qrcode_url}, 0)
+	</insert>
+	
+	<delete id="deleteQrcode">
+		delete from t_qrcode where device_code = #{deviceCode}
+	</delete>
+	
+	<select id="getOwnerByDeviceCode" resultType="java.lang.String">
+		select owner from t_device where device_code = #{deviceCode}
+	</select>
+	
+	<select id="getUserIdByOwner" resultType="java.lang.String">
+		select third_account_org from t_custom_account where third_account = #{owner}
+	</select>
+	
+</mapper>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.wx.PushMsg2DeviceDao">
+
+	<resultMap type="com.wxc.adplatform.model.UserList" id="userList">
+		<result property="userid" column="user_name"/>
+		<result property="name" column="realname"/>
+	</resultMap>
+ 
+	<select id="getThirdAccount" resultType="java.lang.String">
+		select third_account from t_custom_account where third_account = #{third_account}
+	</select>
+	
+	<select id="getAccount" resultType="com.wxc.adplatform.model.Account">
+		select org_id orgId from t_custom_account_extend where owner = #{owner}
+	</select>
+	
+</mapper>

@@ -1,0 +1,45 @@
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="ehcache.xsd">
+	<diskStore path="java.io.tmpdir" />
+	<defaultCache maxElementsInMemory="10000"
+		maxElementsOnDisk="0" eternal="true" overflowToDisk="true"
+		diskPersistent="false" timeToIdleSeconds="0" timeToLiveSeconds="0"
+		diskSpoolBufferSizeMB="50" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LFU" />
+	
+	<!-- 注册用户验证码一分钟限制 -->
+	<cache name="custRegSmsMinLimitCache" maxElementsInMemory="30"
+		maxElementsOnDisk="0" eternal="false" overflowToDisk="true"
+		diskPersistent="true"  timeToLiveSeconds="60"
+		diskSpoolBufferSizeMB="10" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="FIFO" />
+	
+	<!-- 重置密码验证码一分钟限制 -->
+	<cache name="custResetPwdSmsMinLimitCache" maxElementsInMemory="30"
+		maxElementsOnDisk="0" eternal="false" overflowToDisk="true"
+		diskPersistent="true"  timeToLiveSeconds="60"
+		diskSpoolBufferSizeMB="10" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="FIFO" />
+	
+	<!-- 用户端用户注册验证码缓存 -->
+	<cache name="custRegSmsCache" maxElementsInMemory="100"
+		maxElementsOnDisk="0" eternal="false" overflowToDisk="true"
+		diskPersistent="true"  timeToLiveSeconds="1800"
+		diskSpoolBufferSizeMB="30" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LFU" />
+	
+	<!-- 用户端重置密码验证码缓存 -->
+	<cache name="custResetPwdSmsCache" maxElementsInMemory="100"
+		maxElementsOnDisk="0" eternal="false" overflowToDisk="true"
+		diskPersistent="true"  timeToLiveSeconds="1800"
+		diskSpoolBufferSizeMB="30" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LFU" />
+		
+	<!-- 微信公众号openId缓存 -->
+	<cache name="wxOpenIdCache" maxElementsInMemory="100"
+		maxElementsOnDisk="0" eternal="false" overflowToDisk="true"
+		diskPersistent="true"  timeToLiveSeconds="7200"
+		diskSpoolBufferSizeMB="30" diskExpiryThreadIntervalSeconds="120"
+		memoryStoreEvictionPolicy="LFU" />
+	
+</ehcache>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.CheckDao">
+
+	<!-- 收入 -->
+	<select id="findRecordDevicePrice" resultType="Integer">
+	    select SUM(price_device) from t_user_action_record t 
+	    where charge=1 
+		<if test="startDate != null and startDate != ''">AND t.action_time BETWEEN  #{startDate} and #{endDate}</if>
+	</select>
+	
+	<select id="findDeviceWxIncome" resultType="Integer">
+		SELECT sum(fans_income) from t_device_wx_income_statistic where day=#{day}
+	</select>
+	<select id="findDeviceIncome" resultType="Integer">
+		SELECT sum(fans_income) from t_device_income_statistic where day=#{day}
+	</select>
+	<select id="findFinanceIncome" resultType="Integer">
+	  select sum(amount) from t_finance t
+		 where t.type='INCOME'
+		 <if test="startDate != null and startDate != ''">AND t.create_time BETWEEN  #{startDate} and #{endDate}</if>
+	</select>
+	
+	<!-- 支出 -->
+	<select id="findRecordPrice" resultType="Integer">
+	    select SUM(price) from t_user_action_record t 
+	    where charge=1 
+		<if test="startDate != null and startDate != ''">AND  t1. t.action_time BETWEEN  #{startDate} and #{endDate}</if>
+	</select>
+	
+	<select id="findActionStatisticCost" resultType="Integer">
+		SELECT sum(fans_cost) from t_user_action_statistic t1 where t1.`day`=#{day}
+	</select>
+	
+	<select id="findFinanceConsume" resultType="Integer">
+	  select sum(amount) from t_finance t1
+		 where t1.type='CONSUME'
+		 <if test="startDate != null and startDate != ''">AND  t1. t.create_time BETWEEN  #{startDate} and #{endDate}</if>
+	</select>
+	
+	
+</mapper>

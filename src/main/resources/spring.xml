@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:task="http://www.springframework.org/schema/task"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/task 
+        http://www.springframework.org/schema/task/spring-task-3.2.xsd 
+        http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context.xsd
+        http://www.springframework.org/schema/util 
+        http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<!-- 注解自动扫描 -->
+	<context:component-scan base-package="com.wxc.adplatform" />
+	
+	<bean id="springContextHolder" class="com.wxc.adplatform.util.SpringContextHolder"
+		lazy-init="false" />
+
+	<!-- 将多个配置文件读取到容器中，交给Spring管理 -->
+	<bean id="propertyConfigurer"
+		class="com.wxc.adplatform.util.DecryptPropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<!-- 使用file的方式引入，这样可以将配置和代码分离 -->
+				<value>testconfig.properties</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean
+		class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter">
+		<property name="messageConverters">
+			<util:list id="beanList">
+				<!-- 必须要有string转换器 -->
+				<ref bean="stringHttpMessageConverter" />
+				<ref bean="marshallingHttpMessageConverter" />
+				<ref bean="mappingJackson2HttpMessageConverter" />
+			</util:list>
+		</property>
+	</bean>
+
+	<bean id="stringHttpMessageConverter"
+		class="org.springframework.http.converter.StringHttpMessageConverter">
+		<property name="supportedMediaTypes">
+			<list>
+				<value>text/plain;charset=UTF-8</value>
+				<value>application/x-www-form-urlencoded;charset=UTF-8</value>
+			</list>
+		</property>
+	</bean>
+
+	<bean id="marshallingHttpMessageConverter"
+		class="org.springframework.http.converter.xml.MarshallingHttpMessageConverter">
+		<property name="marshaller" ref="jaxb2Marshaller" />
+		<property name="unmarshaller" ref="jaxb2Marshaller" />
+	</bean>
+
+	<bean id="mappingJackson2HttpMessageConverter"
+		class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+		<property name="supportedMediaTypes" value="application/json;charset=UTF-8" />
+	</bean>
+
+	<bean id="jaxb2Marshaller" class="org.springframework.oxm.jaxb.Jaxb2Marshaller">
+		<property name="classesToBeBound">
+			<list>
+				<value>com.wxc.adplatform.model.wx.RequestXmlEntity</value>
+			</list>
+		</property>
+	</bean>
+
+	<!-- 文件上传配置 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- one of the properties available; the maximum file size in bytes -->
+		<!-- 最大上传大小:1M -->
+		<property name="maxUploadSize" value="104857600" />
+		<property name="defaultEncoding" value="UTF-8" />
+		<!-- 启用推迟文件解析, 以便捕获上传文件过大抛出的异常 -->
+		<property name="resolveLazily" value="true" />
+	</bean>
+
+	<!-- 数据源配置，选用淘宝的druid，传说性能一流，待验证 -->
+	<bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+		init-method="init" destroy-method="close">
+		<property name="url"
+			value="jdbc:mysql://${mysql.ip}:${mysql.port}/${mysql.db}?useUnicode=true&amp;characterEncoding=utf8&amp;autoReconnect=true&amp;failOverReadOnly=false" />
+		<property name="username" value="${mysql.user}" />
+		<property name="password" value="${mysql.password}" />
+		<property name="initialSize" value="20" />
+		<property name="maxActive" value="50" />
+	</bean>
+
+	<!-- 配置支持处理jsonp -->
+	<bean
+		class="org.springframework.web.servlet.view.json.MappingJackson2JsonView">
+		<property name="jsonpParameterNames">
+			<set>
+				<value>callback</value>
+			</set>
+		</property>
+	</bean>
+
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<!-- dao session 配置 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- <property name="configLocation" value="configuration.xml"/> -->
+		<property name="mapperLocations" value="classpath:dao/*Mapper.xml" />
+		<property name="typeAliasesPackage" value="com.wxc.adplatform.model" />
+	</bean>
+
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<!-- 扫描dao类 -->
+		<property name="basePackage" value="com.wxc.adplatform.dao" />
+	</bean>
+	
+	<!-- 緩存 -->
+	<bean id="jedisClient" class="com.wxc.adplatform.cache.JedisClient">
+		<constructor-arg index="0" value="${redis.ip}" />
+		<constructor-arg index="1" value="${redis.port}" />
+		<constructor-arg index="2" value="${redis.password}" />
+	</bean>
+
+
+	<!-- 缓存 属性 -->
+	<bean id="cacheManagerFactory"
+		class="org.springframework.cache.ehcache.EhCacheManagerFactoryBean">
+		<property name="configLocation" value="classpath:ehcache.xml" />
+	</bean>
+
+	<!-- 默认是cacheManager -->
+	<bean id="cacheManager" class="org.springframework.cache.ehcache.EhCacheCacheManager">
+		<property name="cacheManager" ref="cacheManagerFactory" />
+	</bean>
+	
+	<!-- 配置线程池 -->
+	<bean id="taskExecutor"
+		class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor"
+	>
+		<!-- 线程池维护线程的最少数量 -->
+		<property name="corePoolSize" value="5" />
+		<!-- 线程池维护线程所允许的空闲时间 -->
+		<property name="keepAliveSeconds" value="30000" />
+		<!-- 线程池维护线程的最大数量 -->
+		<property name="maxPoolSize" value="50" />
+		<!-- 线程池所使用的缓冲队列 -->
+		<property name="queueCapacity" value="200" />
+	</bean>
+	
+</beans>

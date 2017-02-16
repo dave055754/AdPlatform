@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.SJDao">
+
+	<select id="findUserId" resultType="java.lang.Integer">
+		select id from t_custom_account where third_account_org = #{accountOrg} limit 1
+	</select>
+	
+	<select id="findSJIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SJ_INCOME'
+		 and t1.vertifyed=1 
+		 <if test="userId != null and userId != ''">AND  t1.user_id =#{userId}</if>
+		 <if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	<select id="findWithdraw" resultType="java.lang.Integer">
+		 select sum(amount) from t_withdraw t1
+		 where  ( status = 'VERTIFYING' or status='SUCCESS')
+		 <if test="userId != null and userId != ''">AND  t1.user_id =#{userId}</if>
+		 <if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	
+	<update id="updateOwner">
+		update t_user_action_record set owner = md5(#{owner2}) where  owner = md5(#{owner1})
+	</update>
+	
+	<select id = "getRecordActionTime" resultType = "String">
+	SELECT action_time from t_user_action_record where `owner` = MD5(#{owner}) order by id desc limit 1;
+	</select>
+	
+	
+	<select id ="getJiageId" resultType = "Integer">
+		select t1.id from  t_ad t1 left join t_wx_public t2 on t1.appid= t2.wx_appid where t2.wx_name like "%"#{wxName}"%"
+	</select>
+	
+	<update id ="updateRecordJiageById" >
+		update t_user_action_record set price=120,price_device=60 where ad_id=#{adId} and charge=1;
+	</update>
+	
+	<update id ="updateJiageById" >
+		update t_ad set charge = 120 where id=#{adId}
+	</update>
+	
+</mapper>

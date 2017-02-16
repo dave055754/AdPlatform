@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.OwnerDao">
+
+	<select id="findUserId" resultType="java.lang.Integer">
+		select id from t_custom_account where third_account = #{owner}
+	</select>
+	
+	<select id="getOwnerFromDeviceId" resultType="java.lang.String">
+		select owner from t_device where device_code = #{deviceId}
+	</select>
+	
+	<select id="findWithdrawAdIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='INCOME'
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+		<if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	<select id="findWithdrawPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+		  <if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	<select id="findWithdrawHBConsume" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_CONSUME'
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+		  <if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	
+	<select id="findWithdrawAdIncomeAll" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='INCOME'
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1 
+		<if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	<select id="findWithdrawPrintIncomeAll" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1 
+		  <if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	<select id="findWithdrawHBConsumeAll" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_CONSUME'
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1
+		  <if test="start_date != null and start_date != ''">AND (t1.create_time between #{start_date} and #{end_date})</if>
+	</select>
+	
+	<insert id="insertWithdraw" >
+		insert into t_withdraw(amount,real_amount,fee_amount,type,user_id,bank_id,start_date,end_date,create_time, is_sj, wx_name)
+		values(#{bill_amout},#{real_amout},#{fee_amount},#{type},#{userId},#{bankId},#{startDate},#{endDate},now(), #{is_sj},#{weiXinName})
+	</insert>
+	
+	<insert id="insertWithdrawToFinance" >
+		insert into t_finance(user_id,amount,type,withdraw_status,create_time,withdrawId)
+		values(#{userId},#{amount},'WITHDRAW','WAIT',now(),#{withdrawId})
+	</insert>
+	
+	<select id="findWithdrawId" resultType="java.lang.Integer">
+		 select max(id) from t_withdraw t1
+	</select>
+	
+	<update id="updateWithdrawingStatus">
+	       update  t_finance t1 set t1.withdrawed = 2
+		 where  t1.user_id=#{userId}
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+	</update>
+	
+	
+	<select id="findYesterdayAdIncome" resultType="java.lang.Integer">
+		select sum(exposure_income)+sum(click_income)+sum(fans_income) from t_device_income_statistic t1
+		 where owner = #{owner}
+		 and TO_DAYS(now())-TO_DAYS(t1.day)=1
+	</select>
+	
+	<select id="findAllAdIncome" resultType="java.lang.Integer">
+		select sum(exposure_income)+sum(click_income)+sum(fans_income) from t_device_income_statistic t1
+		 where owner = #{owner}
+	</select>
+	
+	<select id="findYesterdayPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.user_id=#{userId}
+		 and TO_DAYS(now())-TO_DAYS(t1.create_time)=1
+	</select>
+	
+	<select id="findAllPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.user_id=#{userId}
+	</select>
+	
+	<select id="findyesterdaySJHB" resultType="java.lang.Integer">
+	    <!--  select sum(amount) from t_finance t1
+		 where user_id = #{userId}
+		 and t1.type='SJ_INCOME'
+		 and TO_DAYS(now())-TO_DAYS(t1.create_time)=1--> 
+		 
+		 select sum(amount) from t_finance t1
+		 where user_id = #{userId}
+		 and t1.type='SBZ_CONSUME'
+		 and TO_DAYS(now())-TO_DAYS(t1.create_time)=1
+	</select>
+	
+	<select id="findDaySJHB" resultType="java.lang.Integer">
+	     <!--  select sum(amount) from t_finance t1
+		 where user_id = #{userId}
+		 and t1.type='SJ_INCOME'
+		 and TO_DAYS(#{day})-TO_DAYS(t1.create_time)=0-->
+		 
+		 
+		  select sum(amount) from t_finance t1
+		 where user_id = #{userId}
+		 and t1.type='SBZ_CONSUME'
+		 and TO_DAYS(#{day})-TO_DAYS(t1.create_time)=0
+	</select>
+	
+	<select id="findallSJHB" resultType="java.lang.Integer">
+	<!-- 	  select sum(amount) from t_finance t1
+		 where user_id = #{userId}
+		 and t1.type='SJ_INCOME' -->
+		 
+		 select sum(amount) from t_finance t1
+		 where user_id = #{userId}
+		 and t1.type='SBZ_CONSUME'
+	</select>
+	
+	<select id="find7DayIncomeList"  resultType="com.wxc.adplatform.model.DayIncome" >
+		select sum(exposure_income)+sum(click_income)+sum(fans_income) as dayIncome, t1.day from t_device_income_statistic t1
+		 where owner = #{owner}
+		 group by t1.day DESC
+		 limit 7
+	</select>
+	
+	
+	<select id="admin_findWithdrawAdIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='INCOME'
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+	</select>
+	
+	<select id="admin_findWithdrawPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+	</select>
+	
+	<select id="admin_findWithdrawHBConsume" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_CONSUME'
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+	</select>
+	
+	<select id="findWithdrawDate" resultType="java.util.Map">
+		 select * from t_finance t1
+		 where (t1.type='INCOME' or t1.type='SBZ_INCOME' or t1.type='SBZ_CONSUME')
+		 and t1.user_id=#{userId}
+		 and t1.vertifyed=1 and t1.withdrawed = 0
+		 order by t1.create_time
+	</select>
+	
+	<select id="findWithdrawing" resultType="java.util.Map">
+		 select * from t_withdraw t1
+		 where t1.user_id=#{userId}
+		 and t1.status='VERTIFYING'
+		 limit 1
+	</select>
+	
+	<select id="admin_findYesterdayAdIncome" resultType="java.lang.Integer">
+		select  sum(exposure_income)+sum(click_income)+sum(fans_income) from t_device_income_statistic t1
+		 where 	TO_DAYS(now())-TO_DAYS(t1.day)=1
+	</select>
+	
+	<select id="admin_findAllAdIncome" resultType="java.lang.Integer">
+		select  sum(exposure_income)+sum(click_income)+sum(fans_income) from t_device_income_statistic t1
+	</select>
+	
+	<select id="admin_findYesterdayPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and TO_DAYS(now())-TO_DAYS(t1.create_time)=1
+	</select>
+	
+	<select id="admin_findAllPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+	</select>
+	
+	<select id="admin_findyesterdaySJHB" resultType="java.lang.Integer">
+	     <!--  select sum(amount) from t_finance t1
+		 where t1.type='SJ_INCOME'
+		 and TO_DAYS(now())-TO_DAYS(t1.create_time)=1-->
+		 
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_COMSUME'
+		 and TO_DAYS(now())-TO_DAYS(t1.create_time)=1
+	</select>
+	
+	<select id="admin_findDaySJHB" resultType="java.lang.Integer">
+	   <!--   select sum(amount) from t_finance t1
+		 where t1.type='SJ_INCOME'
+		 and TO_DAYS(#{day})-TO_DAYS(t1.create_time)=0--> 
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_COMSUME'
+		 and TO_DAYS(#{day})-TO_DAYS(t1.create_time)=0
+	</select>
+	
+	<select id="admin_findallSJHB" resultType="java.lang.Integer">
+		<!--   select sum(amount) from t_finance t1
+		  where t1.type='SJ_INCOME'--> 
+		  select sum(amount) from t_finance t1
+		  where t1.type='SBZ_COMSUME'
+	</select>
+	
+	<select id="admin_find7DayIncomeList"  resultType="com.wxc.adplatform.model.DayIncome" >
+		select sum(exposure_income)+sum(click_income)+sum(fans_income) as dayIncome, t1.day from t_device_income_statistic t1
+		 group by t1.day DESC
+		 limit 7
+	</select>
+	
+	<insert id="saveBankinfo" >
+		insert into t_bank(bank_name,bank_card,bank_account_name,user_id,type,working, id_card, phone)
+		values(#{bank_name},#{bank_card},#{bank_account_name},#{userId},#{type}, 1, #{id_card}, #{phone})
+	</insert>
+	
+	<update id="clearBankWorking" >
+		 update t_bank t1 set t1.working = 0  where t1.user_id = #{userId}
+	</update>
+	
+	
+	<select id="findBankinfo"  resultType="java.util.Map" >
+		select * from t_bank t1 where t1.user_id = #{userId} 
+		and t1.working=1
+		limit 1
+	</select>
+	
+	<select id="incomeList" resultType="com.wxc.adplatform.model.Finance">
+		select  sum(exposure_income)+sum(click_income)+sum(fans_income) as income_amount, 
+		        sum(fans) as fans,t2.wx_name as public_wx_name, t1.day as day ,1 as type_wx
+        from t_device_wx_income_statistic t1 , t_wx_public t2
+		where t1.wx_public_id = t2.wx_appid
+		<if test="owner != null and owner != ''">AND  t1.owner =#{owner}</if>
+		<if test="start_date != null and start_date != ''">AND (t1.day between #{start_date} and #{end_date})</if>
+		group by t1.wx_public_id ,t1.day
+	</select>
+	
+	<select id="getBankList" resultType="java.util.Map">
+		select *
+        from t_bank t1
+        where 1=1
+		<if test="userId != null and userId != ''">AND  t1.user_id = #{userId} </if>
+	</select>
+	
+	
+	<select id="withdrawList" resultType="com.wxc.adplatform.model.WithdrawItem">
+		select *
+        from t_withdraw  t1 
+		where 1=1
+		<if test="userId != null and userId != ''">AND  t1.user_id =#{userId}</if>
+	</select>
+	
+	<select id="withdrawDetail" resultType="java.util.Map">
+		select *
+        from t_withdraw t1 ,t_bank t2
+		where t1.bank_id=t2.id
+		<if test="withdrawId != null and withdrawId != ''">AND  t1.id =#{withdrawId}</if>
+		limit 1
+	</select>
+	
+	<select id="findWithdrawDetailAdIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='INCOME'
+		 and t1.user_id=#{userId}
+		 and (t1.create_time between #{start_date} and #{end_date})
+	</select>
+	
+	<select id="findWithdrawDetailPrintIncome" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.user_id=#{userId}
+		 and (t1.create_time between #{start_date} and #{end_date})
+	</select>
+	
+	<select id="findWithdrawDetailHBConsume" resultType="java.lang.Integer">
+		 select sum(amount) from t_finance t1
+		 where t1.type='SBZ_CONSUME'
+		 and t1.user_id=#{userId}
+		 and (t1.create_time between #{start_date} and #{end_date})
+	</select>
+	
+	<select id="findWithdrawDetailPrintIncomeByday" resultType="com.wxc.adplatform.model.Finance">
+		 select * from t_finance t1
+		 where t1.type='SBZ_INCOME'
+		 and t1.user_id=#{userId}
+		 and (t1.create_time between #{start_date} and #{end_date})
+	</select>
+	
+	<select id="findWithdrawDetailHBConsumeByday" resultType="com.wxc.adplatform.model.Finance">
+		 SELECT  t2.create_time, t2.amount ,t4.nick_name as realname
+  			from  t_merchant_record t2 LEFT JOIN  t_custom_account t3 ON t2.owner = t3.third_account_org
+  			LEFT JOIN t_custom_account t4 ON t2.merchant_account = t4.third_account_org
+		 where t3.id=#{userId}
+		 and (t2.create_time between #{start_date} and #{end_date})
+	</select>
+	
+	<select id="findOwner" resultType="java.lang.String">
+		 select t2.third_account from t_withdraw t1, t_custom_account t2
+		 where  t1.user_id = t2.id
+		 and t1.id=#{withdrawId}
+	</select>
+	
+	<update id ="updateWithdrawMoney">
+		update t_withdraw set amount=#{billMoney},real_amount=#{realMoney} where id=#{withdrawId}
+	</update>
+	
+	<update id ="updateFinanceByTime">
+		update t_finance set withdrawed=1 where (create_time between #{start_date} and #{end_date} ) and user_id=#{userId}
+	</update>
+	
+	<select id="getVertifyedCount" resultType="java.lang.Integer">
+		select count(id) from t_finance where user_id = #{userId} and vertifyed = 0
+		and create_time between #{firstDate} and #{lastDate}
+	</select>
+	
+	<select id="getCurrentDayBeforeCount" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'SBZ_INCOME'
+		and create_time between #{todayDateStart} and #{todayDateEnd}
+	</select>
+	
+</mapper>

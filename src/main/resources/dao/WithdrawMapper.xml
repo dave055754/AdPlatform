@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.WithdrawDao">
+
+	<select id="findUnCheckList" resultType="com.wxc.adplatform.model.Withdraw">
+		select a.*,b.user_name,b.realname,b.sj_owner,c.bank_name,c.id_card,
+		c.bank_card,c.phone,c.bank_account_name, d.realname as deviceName,b.nick_name
+		from t_withdraw a
+		left join t_custom_account b on a.user_id = b.id
+		left join t_bank c on a.bank_id = c.id
+		left join t_custom_account d on b.sj_owner = d.third_account_org
+		<where>
+			<trim suffixOverrides="and">
+				<if test="searchName != null and searchName != ''">
+					and (b.realname like "%"#{searchName}"%" or c.bank_account_name like  "%"#{searchName}"%"
+					     or a.wx_name like  "%"#{searchName}"%")
+				</if>
+				<if test="startTime != null and startTime != ''">
+					and a.create_time &gt;= #{startTime}
+				</if>
+				<if test="endTime != null and endTime != ''">
+					and a.create_time &lt; #{endTime}
+				</if>
+				<if test="status != null and status != ''">
+					and a.status = #{status}
+				</if>
+				<if test="status == ''">
+					and a.status != 'VERTIFYING'
+				</if>
+				<if test="is_sj != null and is_sj != ''">
+					and a.is_sj = #{is_sj}
+				</if>
+			</trim>
+		</where>
+		order by a.create_time desc
+		<if test="offset != null and pageSize != null">
+			limit #{offset}, #{pageSize}
+		</if>
+	</select>
+	
+	<select id="findRows" resultType="java.lang.Integer">
+		select count(a.id) from t_withdraw a
+		left join t_custom_account b on a.user_id = b.id
+		left join t_bank c on a.bank_id = c.id
+		<where>
+			<trim suffixOverrides="and">
+				<if test="searchName != null and searchName != ''">
+					and (b.realname like "%"#{searchName}"%" or c.bank_account_name like  "%"#{searchName}"%")
+				</if>
+				<if test="startTime != null and startTime != ''">
+					and a.create_time &gt;= #{startTime}
+				</if>
+				<if test="endTime != null and endTime != ''">
+					and a.create_time &lt; #{endTime}
+				</if>
+				<if test="status != null and status != ''">
+					and a.status = #{status}
+				</if>
+				<if test="status == ''">
+					and a.status != 'VERTIFYING'
+				</if>
+				<if test="is_sj != null and is_sj != ''">
+					and a.is_sj = #{is_sj}
+				</if>
+			</trim>
+		</where>
+	</select>
+	
+	<update id="updateWithdrawStatus">
+		update t_withdraw set status = #{status},withdraw_reason = #{withdraw_reason},bill_id = #{bill_id},
+		check_user = #{loginUserId} where id = #{id}
+	</update>
+	
+	<select id="getUserIdById" resultType="com.wxc.adplatform.model.Withdraw">
+		select * from t_withdraw where id = #{id}
+	</select>
+	
+	<select id="getThirdAccountOrgByUserId" resultType="java.lang.String">
+		select third_account_org from t_custom_account where id = #{user_id}
+	</select>
+	
+	
+	<select id="getAllWithdrawListUncheck" resultType="com.wxc.adplatform.model.Withdraw">
+		SELECT * from t_withdraw where is_sj='SBZ' and `status`='VERTIFYING'
+	</select>
+	
+	<insert id="addWithdraw2Finance">
+		insert into t_finance(user_id,amount,type,create_time)
+		values(#{user_id},#{amount},'WITHDRAW',#{create_time})
+	</insert>
+	
+	<update id="updateFinanceWithdrawStatus">
+		update t_finance set withdraw_status = #{withdraw_status},withdrawed = #{withdrawed}
+		where user_id = #{user_id} and create_time between #{start_str} and #{end_str}
+	</update>
+	
+	<select id="getSjWithdrawListRows" resultType="java.lang.Integer">
+		select count(a.id)
+		from t_finance a
+		left join t_withdraw b on a.withdrawId = b.id
+		where a.type = 'WITHDRAW' and (a.withdraw_status = 'SUCCESS' or a.withdraw_status = 'WAIT')
+	</select>
+	
+	<select id="getSjWithdrawList" resultType="com.wxc.adplatform.model.SjWithdraw">
+		select a.amount amount,b.wx_name weixinName,a.create_time date,a.withdraw_status withdrawStatus
+		from t_finance a
+		left join t_withdraw b on a.withdrawId = b.id
+		where a.type = 'WITHDRAW' and (a.withdraw_status = 'SUCCESS' or a.withdraw_status = 'WAIT')
+		limit #{offset},#{pageSize}
+	</select>
+	
+	<select id="getUserIdByThirdAccountOrg" resultType="java.lang.Integer">
+		select id from t_custom_account where third_account_org = #{third_account_org}
+	</select>
+	
+	<select id="getIncome" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'INCOME' and user_id = #{userId}
+	</select>
+	
+	<select id="getSbzConsume" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'SBZ_CONSUME' and user_id = #{userId}
+	</select>
+	
+	<select id="getSbzIncome" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'SBZ_INCOME' and user_id = #{userId}
+	</select>
+	
+	<select id="getWithdrawedAmount" resultType="java.lang.Integer">
+		select sum(amount) from t_finance where type = 'WITHDRAW' and user_id = #{userId}
+		and (withdraw_status = 'SUCCESS' or withdraw_status = 'WAIT')
+	</select>
+	
+</mapper>

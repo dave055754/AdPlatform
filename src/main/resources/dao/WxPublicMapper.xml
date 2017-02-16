@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.WxPublicDao">
+
+	<resultMap type="com.wxc.adplatform.model.WxPublic" id="wxPublic">
+		<result property="id" column="id"/>
+		<result property="wxName" column="wx_name"/>
+		<result property="wxDesc" column="wx_desc"/>
+		<result property="wxAppid" column="wx_appid"/>
+		<result property="wxLogo" column="wx_logo"/>
+		<result property="wxQrcode" column="wx_qrcode"/>
+		<result property="wxUrl" column="wx_url"/>
+		<result property="userId" column="user_id"/>
+		<result property="wxDetailUrl" column="wx_detail_url"/>
+		<result property="wxFollowUrl" column="wx_follow_url"/>
+		<result property="wxArticleUrl" column="wx_article_url"/>
+	</resultMap>
+	
+	<insert id="addWxPublic">
+		insert into t_wx_public(wx_name,wx_desc,wx_appid,wx_url,user_id,wx_logo,wx_qrcode,wx_detail_url,wx_follow_url,wx_article_url)
+		values(#{wxName},#{wxDesc},#{wxAppid},#{wxUrl},#{loginUserId},#{wxLogo},#{wxQrcode},#{wxDetailUrl},#{wxFollowUrl},#{wxArticleUrl})
+		
+		ON DUPLICATE KEY UPDATE
+		wx_name=#{wxName},
+		wx_desc=#{wxDesc},
+		wx_url=#{wxUrl},
+		user_id=#{loginUserId},
+		wx_logo=#{wxLogo},
+		wx_qrcode=#{wxQrcode},
+		wx_detail_url=#{wxDetailUrl},
+		wx_follow_url=#{wxFollowUrl},
+		wx_article_url=#{wxArticleUrl}
+	</insert>
+	
+	<select id="getWxPublicList" resultMap="wxPublic">
+		select wx_appid,wx_name,wx_desc,wx_logo,wx_qrcode,wx_url,wx_detail_url,wx_article_url
+		from t_wx_public where user_id = #{loginUserId}
+	</select>
+	
+	<select id="getWxPublicByAppId" resultMap="wxPublic">
+		select * from t_wx_public where wx_appid=#{wxAppid}
+	</select>
+	
+	<select id="getAppidAndDeviceCode" resultType="Integer">
+		select count(*) from t_wx_public_device_bind where appid=#{appid} and device_code=#{deviceCode}
+	</select>
+	
+	<select id="getAppidByAdid" resultType="java.lang.String">
+		select appid from t_ad where id = #{id}
+	</select>
+	
+	<select id="getDevicecodeByAppid" resultType="java.lang.String">
+		select device_code from t_wx_public_device_bind where appid = #{appid}
+	</select>
+	
+	<select id="getAppidByAdscheduleid" resultType="java.lang.String">
+		select appid from t_ad where adtype = 1 and ad_schedule_id = #{adScheduleId}
+	</select>
+	
+	<select id="getAppidByUserId" resultType="java.lang.String">
+		select appid from t_ad where adtype = 1 and create_user_id = #{userId}
+	</select>
+	
+	<delete id="deleteAppidDevicecode">
+		delete from t_wx_public_device_bind where appid = #{appid}
+	</delete>
+	
+	<select id="getAppidByDevicecode" resultType="java.lang.String">
+		select appid from t_wx_public_device_bind where device_code = #{deviceCode}
+	</select>
+	
+	<insert id="addStatisticAppid">
+		insert t_statistic_appid (appid,openid,click_time) values(#{appid},#{openId},#{clickTime})
+	</insert>
+	
+	<select id="getAllAppid" resultType="java.lang.String">
+		select wx_appid from t_wx_public	
+	</select>
+	
+	<update id="updateWxArticleUrl">
+		update t_wx_public
+		<set>
+			<trim>
+				<if test="wxArticleUrl != null and wxArticleUrl != ''">
+					wx_article_url = #{wxArticleUrl},
+				</if>
+				<if test="wxDetailUrl != null and wxDetailUrl != ''">
+					wx_detail_url = #{wxDetailUrl},
+				</if>
+				<if test="wxFollowUrl != null and wxFollowUrl != ''">
+					wx_follow_url = #{wxFollowUrl},
+				</if>
+			</trim>
+		</set>
+		where wx_appid = #{wxAppid} and user_id = #{userId}
+	</update>
+	
+</mapper>

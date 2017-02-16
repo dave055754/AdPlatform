@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.TestDao">
+
+	<resultMap type="com.wxc.adplatform.model.WxPublic" id="wxPublic">
+		<result property="id" column="id"/>
+		<result property="wxName" column="wx_name"/>
+		<result property="wxDesc" column="wx_desc"/>
+		<result property="wxAppid" column="wx_appid"/>
+		<result property="wxLogo" column="wx_logo"/>
+		<result property="wxQrcode" column="wx_qrcode"/>
+		<result property="wxUrl" column="wx_url"/>
+		<result property="userId" column="user_id"/>
+		<result property="wxDetailUrl" column="wx_detail_url"/>
+		<result property="wxFollowUrl" column="wx_follow_url"/>
+		<result property="wxArticleUrl" column="wx_article_url"/>
+	</resultMap>
+
+	<insert id="addAccountExtend">
+		insert into t_custom_account_extend(account_id, owner, org_id, org_name)
+		values(#{account_id},#{owner},#{org_id},#{org_name})
+		
+		ON DUPLICATE KEY UPDATE
+		account_id = #{account_id},
+		org_id = #{org_id},
+		org_name = #{org_name}
+	</insert>
+	
+	<select id="getCustom" resultType="com.wxc.adplatform.model.Custom">
+		select id id,third_account thirdAccount,realname realname from t_custom_account where third_account = #{owner}
+	</select>
+	
+	<select id="getOrgid" resultType="java.lang.String">
+		select org_id from t_custom_account_extend where org_id = #{org_id}
+	</select>
+	
+	<select id="getOwnerByDevicecode" resultType="java.lang.String">
+		select owner from t_device where device_code = #{devicecode}
+	</select>
+	
+	<select id="getScheduleIdByAdname" resultType="java.lang.Integer">
+		select ad_schedule_id from t_ad where name = #{adname}
+	</select>
+	
+	<select id="getCostByScheduleId" resultType="java.lang.Integer">
+		select (sum(uas.click_cost) + sum(uas.exposure_cost) + sum(uas.fans_cost)) cost
+		from t_ad a
+		left join t_user_action_statistic uas on a.id = uas.ad_id
+		where a.ad_schedule_id = #{scheduleId}
+	</select>
+	
+	<update id="updatePrintPlus">
+		update t_ad_schedule set print_plus = #{cost} where id = #{scheduleId}
+	</update>
+	
+	<select id="getQuota" resultType="java.lang.Integer">
+		select quota from t_ad_schedule where id = #{scheduleId}
+	</select>
+	
+	<update id="updateAdflag">
+		update t_ad_schedule set adflag = #{adflag} where id = #{scheduleId}
+	</update>
+	
+	<select id="getPrintPlus" resultType="java.lang.Integer">
+		select print_plus from t_ad_schedule where id = #{scheduleId}
+	</select>
+	
+	<select id="getCityByArea" resultType="java.lang.String">
+		select name from bas_area where code = #{area}
+	</select>
+	
+	<select id="getSuitableWxAd" resultType="com.wxc.adplatform.model.DeviceAd">
+		select ta.name devicecode,ta.ad_url adUrl,ta.appid as appid, ta.adtype adtype,ta.id adId,ta.charge charge,ta.create_user_id createUserId,ta.area_city area,
+		ta.tag tag,tas.quota quota,tas.id adScheduleId
+		from t_ad ta
+		join t_ad_schedule tas on ta.ad_schedule_id = tas.id
+		where ta.checkflag = 1 and curDate() &gt;= ta.start_date and curDate() &lt;= ta.end_date and ta.onoff = 1 and tas.onoff = 1
+		and ta.platform = 0 and tas.adflag = 0
+		order by ta.priority desc,ta.charge desc,ta.create_time asc
+	</select>
+	
+	<select id="getAllWithdrawList" resultType="com.wxc.adplatform.model.Withdraw">
+		select * from t_withdraw where status != 'FAILED'
+	</select>
+	
+	<update id ="updateFinanceByTime">
+		update t_finance set withdrawed=1 where (create_time between #{start_date} and #{end_date} ) and user_id=#{userId}
+	</update>
+	
+	<update id="updateWithdrawedToZero">
+		update t_finance set withdrawed = 0 where create_time &gt;= '2016-10-01 00:00:00'
+	</update>
+		
+	<select id="getWxPublics" resultMap="wxPublic">
+		select * from t_wx_public
+	</select>
+	
+	<update id="updateWxFollowUrl">
+		update t_wx_public set wx_follow_url = #{wxFollowUrl} where wx_appid = #{wxAppid}
+	</update>
+	
+</mapper>

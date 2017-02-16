@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.DeviceDao">
+	
+	
+	<resultMap type="DeviceSupport" id="deviceSupport">
+		<id property="id" column="id"/>
+		<result property="deviceType" column="device_type"/>
+		<result property="deviceModel" column="device_model"/>
+	</resultMap>
+	
+	<resultMap type="Device" id="device">
+		<id property="deviceId" column="id"/>
+		<result property="deviceType" column="device_type"/>
+		<result property="deviceName" column="device_name"/>
+		<result property="deviceModel" column="device_model"/>
+		<result property="owner" column="owner"/>
+		<result property="devicecode" column="device_code"/>
+		<result property="lng" column="lng"/>
+		<result property="lat" column="lat"/>
+		<result property="deviceLoc" column="device_loc"/>
+		<result property="shopType" column="shop_type"/>
+		<result property="deviceCity" column="device_city"/>
+		<result property="templateType" column="device_template_type"/>
+		<result property="locale" column="locale"/>
+		<result property="shopBusiness" column="shop_business"/>
+	</resultMap>
+	
+	<resultMap type="com.wxc.adplatform.model.MerchantInfo" id="merchantInfoList">
+		<result property="merchantAccount" column="merchant_account"/>
+		<result property="t_id" column="t_id"/>
+		<result property="name" column="nick_name"/>
+		<result property="logo" column="head_img_url"/>
+	</resultMap>
+	
+	<resultMap type="com.wxc.adplatform.model.AdRecord" id="adRecord">
+		<result property="id" column="id" />
+		<result property="adId" column="ad_id" />
+		<result property="deviceId" column="device_id" />
+		<result property="wxUserId" column="wx_user_id" />
+		<result property="wxPublicId" column="wx_public_id" />
+		<result property="count" column="count" />
+		<result property="owner" column="owner" />
+		<result property="charge" column="charge" />
+		<result property="price" column="price" />
+		<result property="price_device" column="price_device" />
+		<result property="billingId" column="billing_id" />
+		<result property="billingIdDevice" column="billing_id_device" />
+		<result property="spArea" column="area" />
+		<result property="spSex" column="sex" />
+		<result property="spIndustry" column="industry" />
+		<result property="os" column="os" />
+		<result property="action" column="action" />
+		<result property="actionTime" column="action_time" />
+		
+	</resultMap>
+	
+	<resultMap type="com.wxc.adplatform.model.CheckFansPrint" id="checkFansPrintData">
+		<result property="wxUserId" column="customerid"/>
+		<result property="deviceId" column="devicecode"/>
+		<result property="owner" column="orgid"/>
+		<result property="actionTime" column="printtime"/>
+		<result property="wxPublicId" column="appid"/>
+	</resultMap>
+	
+	<select id="getSupportDeviceModel" resultMap="deviceSupport" >
+		select * from t_device_support where device_type=#{deviceType}
+	</select>
+	
+	<select id="findDeviceOwner" resultMap="device" >
+		select * from t_device where device_code=#{device_code}
+	</select>
+	
+	<insert id="addWxAction">
+		insert into t_user_action_record (ad_id,device_id, wx_user_id,wx_public_id,action,action_time,
+		charge,owner,price,price_device,sex,industry,os,area,billing_id,billing_id_device
+		) 
+		values(#{adId},#{deviceId}, #{wxUserId}, #{wxPublicId},'PRINT',
+		<if test="actionTime != null and actionTime != ''">
+			#{actionTime},
+		</if>
+		<if test="actionTime == null or actionTime == ''">
+			now(),
+		</if>
+		
+		#{charge},#{owner},#{price},#{price_device},#{spSex},#{spIndustry},#{os},
+		#{spArea},#{billingId},#{billingIdDevice}
+		)
+	</insert>
+	
+	<update id="updateWxAction">
+		update t_user_action_record set os=#{os}, sex=#{spSex}, area=#{spArea}, owner=#{owner},
+		charge=#{charge},billing_id=#{billingId},billing_id_device=#{billingIdDevice},
+		price=#{price},price_device=#{price_device},industry=#{spIndustry}
+		where id=#{id}
+	</update>
+	
+	<insert id="addClickAction">
+		insert into t_user_action_record (ad_id,device_id, wx_user_id,wx_public_id,action,action_time) 
+		values(#{adId}, #{deviceId},#{wxUserId}, #{wxPublicId},'CLICK',now())
+	</insert>
+	
+	<insert id="addScreenAction"  parameterType="com.wxc.adplatform.model.AdRecord">
+		insert into t_user_action_record (ad_id,device_id, count,action,action_time) values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.adId},#{item.deviceId},#{item.count},'EXPOSURE',#{item.actionTime})
+		</foreach>
+	</insert>
+	
+	<insert id="addDevice">
+		insert into t_device (device_type,device_name,device_monitor_type,device_template_type,
+		device_code,lat,lng,locale,shop_business,shop_type,owner)
+		values (#{deviceTypeId}, #{deviceName}, #{monitorType}, #{templateType},
+		#{devicecode},#{lat}, #{lng}, #{locale}, #{shopBusiness}, #{shopType}, #{owner})
+		
+		ON DUPLICATE KEY UPDATE
+		device_type=#{deviceTypeId},
+		device_name=#{deviceName},
+		device_monitor_type=#{monitorType},
+		device_template_type=#{templateType},
+		lat=#{lat},
+		lng=#{lng},
+		locale=#{locale},
+		shop_business=#{shopBusiness},
+		shop_type=#{shopType},
+		owner=#{owner}
+	</insert>
+	
+	<update id="updateDeviceCity">
+		update t_device set device_city = #{code},device_loc = #{formatted_address}
+		where device_code = #{deviceCode}
+	</update>
+	
+	<insert id="addDeviceAd">
+		insert into m_device_ad(device_code,ad_id) values(#{deviceCode},#{adId})
+	</insert>
+	
+	
+	<select id="getDeviceByCode"  resultMap="device" >
+		select * from t_qrcode t1 left join t_device t2 on t1.device_code=t2.device_code where code = #{code}
+	</select>
+	
+	<select id="getDeviceByDeviceCode"  resultMap="device" >
+		select * from t_device t2   where t2.device_code = #{code}
+	</select>
+	
+	
+	<select id="findUserClickRecord" resultType="Integer">
+		select count(*) from t_user_action_record where wx_user_id=#{openId} and action="CLICK" and ad_id= #{adId}
+	</select>
+	
+	<insert id="addUser">
+		insert into t_custom_account(user_token,role,user_type,third_account) values(#{userToken},"MERCHENT","WXC",#{owner})
+	</insert>
+	
+	<select id="getDeviceAdByDate" resultType="java.lang.Integer">
+		select count(*) from m_device_ad where device_code = #{devicecode} and ad_id = #{adId}  and date_format(create_time,'%Y-%m-%d') = CURDATE()
+	</select>
+	
+	<select id="getOwnerByDeviceCode" resultType="java.lang.String">
+		select owner from t_device where device_code = #{deviceCode}
+	</select>
+	
+	<update id="setMainWxOrder">
+		update t_device set main_wx_order = #{mainWxOrder}
+		where device_code = #{deviceCode}
+	</update>
+	
+	<select id="getDeviceMainWxOrderList" resultType="com.wxc.adplatform.model.DeviceMainWxInfo">
+		select device_name,device_loc,device_code,main_wx_order,main_wx_name,accept_ad_status from t_device
+		where owner = #{owner}
+		limit #{offset},#{pageSize}
+	</select>
+	
+	<select id="getDeviceMainWxInfo" resultType="com.wxc.adplatform.model.DeviceMainWxInfo">
+		select device_code,main_wx_order,main_wx_name from t_device
+		where device_code = #{deviceCode}
+	</select>
+	
+	<update id="setDeviceMainWxName" >
+		update t_device set main_wx_name = #{wxName} where device_code  = #{deviceCode}
+	</update>
+	
+	<insert id="addDeviceV2">
+		insert into t_device (device_type,
+		device_code,lat,lng,owner)
+		values ('ZHI',
+		#{deviceCode},#{latitude}, #{longitude}, #{ownerId})
+		ON DUPLICATE KEY UPDATE
+		lat=#{latitude},
+		lng=#{longitude},
+		owner=#{ownerId} 
+	</insert>
+
+	<select id="getDeviceYestodayIncome" resultType="com.wxc.adplatform.model.DeviceMainWxInfo">
+		select a.device_code,sum(a.fans_income) device_yestoday_income from t_device_income_statistic a
+		where a.day = date_sub(curdate(),interval 1 day) and a.owner = #{owner}
+		group by a.device_code
+	</select>
+	
+	<update id="updateDeviceAcceptAdStatus">
+		update t_device set accept_ad_status = #{accept_ad_status} where device_code = #{deviceCode}
+	</update>
+	
+	<select id="getDeviceAcceptAdStatus" resultType="java.lang.Integer">
+		select accept_ad_status from t_device where device_code = #{deviceCode}
+	</select>
+
+	<delete id="deleteAppidofDevice">
+		delete from t_qrcode where device_code = #{deviceCode}
+	</delete>
+	
+	<insert id="addDevicePayRecord" useGeneratedKeys="true" keyProperty="id">
+		insert into t_finance (user_id,amount,`type`,create_time,update_time,transaction_id)
+		values (#{userId},#{amount},#{type},#{create_time},#{update_time}, #{transaction_id})
+	</insert>
+	
+	<select id="findDevicecodeAndAppidBind" resultType="com.wxc.adplatform.model.WxpublicDeviceBind">
+		select * from t_wx_public_device_bind where appid=#{appid} and device_code=#{device_code} limit 1
+	</select>
+	
+	<insert id="addDevicecodeAndAppidBind">
+		insert into t_wx_public_device_bind (appid, device_code) values (#{appid}, #{device_code})
+	</insert>
+	
+	<insert id="addPayPrintRecord">
+		insert into t_pay_print_record(user_id,amount,`type`,device_code,open_id,create_time,update_time,transaction_id)
+		values (#{userId},#{amount},#{type},#{device_code},#{open_id},#{create_time},#{update_time}, #{transaction_id})
+	</insert>
+	
+	<select id="getdayBeforeList" resultType="com.wxc.adplatform.model.PayPrintRecord" >
+		select t.user_id as userId,t.create_time,t.update_time,SUM(t.amount) as amount from t_pay_print_record t where t.update_time BETWEEN #{startTime} and #{endTime}
+		GROUP BY t.user_id
+	</select>
+	
+	<delete id="deleteOtherDevice">
+		delete from t_device where device_code = #{deviceCode}
+	</delete>
+	
+	<select id="getDeviceByCodeByOwner" resultType="java.lang.String">
+		select device_code from t_device where owner = #{owner}
+	</select>
+	
+	<select id="getPayPrintRecordCount" resultType="java.lang.Integer">
+		select count(id) from t_pay_print_record where update_time BETWEEN  #{timeStart} and #{timeEnd} 
+	</select>
+	
+	<select id="getPayPrintRecord" resultType="com.wxc.adplatform.model.PayPrintRecord" >
+		select * from t_pay_print_record where update_time BETWEEN  #{timeStart} and #{timeEnd} limit #{begin},#{count}
+	</select>
+	
+	<select id="getDayofMerchantByCount" resultType="java.lang.Integer" >
+		select count(id) from t_merchant_record t where t.statistics_time=#{dayTime}
+	</select>
+	
+	<select id="getDayofMerchant" resultMap="merchantInfoList" >
+		select t.*,t1.nick_name,t1.head_img_url from t_merchant_record t,t_custom_account t1 where t.user_id=t1.id and t.statistics_time=#{dayTime} ORDER BY t.amount DESC limit #{begin},#{count}
+	</select>
+	
+	<select id="getMerchantListByCount" resultType="java.lang.Integer" >
+		select count(DISTINCT(merchant_account)) from t_merchant_record t where t.statistics_time BETWEEN #{timeStart} and #{timeEnd}
+	</select>
+	
+	<select id="getWeekofMerchant" resultMap="merchantInfoList" >
+		select t.merchant_account,t.device_code,t.user_id,t.`owner`,t.statistics_time,SUM(t.count) as count,t1.nick_name,t1.head_img_url ,SUM(t.amount) as amount from t_merchant_record t,t_custom_account t1 
+		where t.user_id=t1.id and t.statistics_time BETWEEN #{timeStart} and #{timeEnd} GROUP BY t.merchant_account ORDER BY amount DESC limit #{begin},#{count}
+	</select>
+	
+	<select id="getMonthofMerchant" resultMap="merchantInfoList" >
+		select t1.merchant_account,t1.device_code,t1.user_id,t1.`owner`,t1.statistics_time,SUM(t1.count) as count,SUM(t1.amount) as amount,t2.nick_name,t2.head_img_url from t_merchant_record t1,t_custom_account t2 
+		where t1.user_id=t2.id and t1.statistics_time BETWEEN #{timeStart} and #{timeEnd} GROUP BY t1.merchant_account ORDER BY amount DESC limit #{begin},#{count}
+	</select>
+	
+	<select id="getTotalofMerchantByCount" resultType="java.lang.Integer" >
+		select count(DISTINCT(merchant_account)) from t_merchant_record
+	</select>
+	
+	<select id="getTotalofMerchant" resultMap="merchantInfoList" >
+		select t.merchant_account,t.device_code,t.user_id,t.`owner`,t.statistics_time,SUM(t.count) as count,t1.nick_name,t1.head_img_url,SUM(t.amount) as amount from t_merchant_record t ,t_custom_account t1 
+		where t.user_id=t1.id GROUP BY t.merchant_account ORDER BY amount DESC limit #{begin},#{count}
+	</select>
+	
+	<select id="getRankMerchant" resultMap="merchantInfoList" >
+		SELECT temp.* FROM (SELECT @rownum:=@rownum+1 t_id,aaa.* FROM (SELECT @rownum:=0) a,
+ 	(select SUM(amount) as amount,id,merchant_account,device_code,user_id,finance_id,`owner`,
+	SUM(count) as count from t_merchant_record t group by t.merchant_account ) aaa ORDER BY aaa.`amount` DESC) temp WHERE temp.merchant_account = #{merchant_account}
+	</select>
+	
+	<insert id="addCheckAdRecord">
+		insert into t_check_adrecord (device_id, wx_user_id,wx_public_id,action_time) 
+		values(#{deviceId},#{wxUserId}, #{wxPublicId}, #{actionTime})
+	</insert>
+	
+	<select id="getCheckAdRecord" resultType="java.lang.Integer" >
+		select count(id) from t_check_adrecord where wx_user_id=#{wxUserId} and wx_public_id=#{wxPublicId}
+		and device_id = #{deviceId}
+	</select>
+	
+	<delete id="delCheckAdRecord">
+		delete from t_check_adrecord where wx_user_id=#{wxUserId} and wx_public_id=#{wxPublicId}
+		and device_id = #{deviceId}
+	</delete>
+	
+	<select id="getCheckAdRecordList" resultMap="adRecord" >
+		select * from t_check_adrecord ORDER BY id limit #{begin},#{count}
+	</select>
+	
+	<select id="getCheckAdRecordCount" resultType="java.lang.Integer" >
+		select count(id) from t_check_adrecord
+	</select>
+	
+	<delete id="delCheckAdRecordAll">
+		delete from t_check_adrecord 
+	</delete>
+	
+	<select id="getCheckFansPrintCount" resultType="Integer">
+		select count(*) from t_device_print_tmp
+		where printtime BETWEEN  #{timeStart} and #{timeEnd}
+	</select>
+	
+	<select id="getCheckFansPrintList" resultMap="checkFansPrintData">
+		select t1.customerid,t1.devicecode,t1.orgid,t1.printtime,t2.appid  from t_device_print_tmp t1 ,t_ad t2 where t1.weixinname=t2.name
+		and t1.printtime BETWEEN  #{timeStart} and #{timeEnd}  limit #{begin},#{count}
+	</select>
+	
+	<select id="getAccountIdByOwner" resultType="com.wxc.adplatform.model.Account">
+		select id accountId,realname realname from t_custom_account where third_account = #{owner}
+	</select>
+	
+	<insert id="addAccountExtend">
+		insert into t_custom_account_extend(account_id, owner, org_id, org_name)
+		values(#{account_id},#{owner},#{org_id},#{org_name})
+		
+		ON DUPLICATE KEY UPDATE
+		account_id = #{account_id},
+		org_id = #{org_id},
+		org_name = #{org_name}
+	</insert>
+	
+</mapper>

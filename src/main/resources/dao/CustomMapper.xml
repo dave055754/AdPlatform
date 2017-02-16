@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.CustomDao">
+
+	<resultMap type="Custom" id="custom">
+		<id property="id" column="id"/>
+		<result property="phoneNumber" column="user_name"/>
+		<result property="password" column="password"/>
+		<result property="accessToken" column="user_token"/>
+		<result property="nickName" column="nick_name"/>
+		<result property="headImageUrl" column="head_img_url"/>
+		<result property="registTime" column="regist_time"/>
+		<result property="status" column="status"/>	
+		
+		<result property="role" column="role"/>	
+		<result property="adminRole" column="admin_role"/>	
+		<result property="userType" column="user_type"/>	
+		
+		<result property="thirdAccount" column="third_account"/>
+		<result property="thirdAccountOrg" column="third_account_org"/>
+	
+	</resultMap>
+	
+	<resultMap type="DeviceIncome" id="deviceIncome">
+		<result property="clickIncome" column="click_income"/>
+		<result property="fansIncome" column="fans_income"/>
+	</resultMap>
+
+	<select id="findUser"  resultMap="custom">
+		SELECT * from t_custom_account where user_name = #{phoneNumber} and password=#{password} and status=1
+	</select>
+	
+	<select id="getUserByToken"  resultMap="custom">
+		SELECT * from t_custom_account where user_token = #{token} 
+	</select>
+	
+	<update id="setUserToken">
+		update t_custom_account set user_token=#{token} where id=#{userId}
+	</update>
+	
+	<select id="isExistUser" resultType="Integer">
+		SELECT COUNT(id) FROM t_custom_account WHERE user_name = #{nameName}		
+	</select>
+	
+	<insert id="addUser" useGeneratedKeys="true" keyProperty="id">
+		insert into t_custom_account (user_name,password,user_token,admin_role,realname,regist_time) 
+		values (#{phoneNumber},#{password},#{accessToken},#{adminRole},#{realname},now()
+		)
+	</insert>
+	
+	
+	
+	
+	<select id="findUserByPhoneNumber"  resultMap="custom">
+		SELECT * from t_custom_account where user_name = #{phoneNumber}  and status=1
+	</select>
+	
+	<select id="findUserByUserId"  resultMap="custom">
+		SELECT * from t_custom_account where id = #{userId}  and status=1
+	</select>
+	
+	<update id="updateUserBalance">
+		update t_custom_account set balance = balance + #{total_fee} where id = #{userId}
+	</update>
+	
+	<update id="updateChangeUserBalance">
+		update t_custom_account set balance=balance+#{balance} where id=#{userId}
+	</update>
+	
+	<select id="findUserByThirdAccount" resultMap="custom">
+		SELECT * FROM t_custom_account WHERE third_account = #{owner}		
+	</select>
+	
+	<select id="countUserByThirdAccount" resultType="Integer">
+		SELECT count(*) FROM t_custom_account WHERE third_account = #{owner}		
+	</select>
+	
+	
+	<insert id="addThirdAccount">
+		insert into t_custom_account (third_account,balance,regist_time,role,user_type) 
+		values (#{owner},#{balance},now(),'MERCHENT','WXC')
+	</insert>
+	
+	<update id="updateThirdAccount">
+		update t_custom_account set balance=balance+#{balance},nick_name=#{nickName},head_img_url=#{headImageUrl} where third_account=#{owner} 
+	</update>
+	
+	<update id="updateLockAmount">
+		update t_custom_account set lock_amount = lock_amount + #{charge} where id = #{createUserId}
+	</update>
+	
+	<insert id="addUserFromWx">
+		insert into t_custom_account(user_token,role,user_type,third_account_org,third_account,realname)
+		values(#{userToken},"MERCHENT","WXC",#{thirdAccountOrg},#{thirdAccount},#{realname})
+	</insert>
+	
+	<update id="updateUserFromWx">
+		update t_custom_account set user_token = #{userToken},role = "MERCHENT",user_type = "WXC",third_account_org = #{thirdAccountOrg},realname = #{realname}
+		where third_account = #{thirdAccount}
+	</update>
+	
+	<select id="getThirdAccountOrg" resultMap="custom">
+		select third_account_org from t_custom_account where third_account_org != '' and third_account_org is not null
+	</select>
+	
+	<select id="getAcceptAdStatus" resultType="java.lang.Integer">
+		select accept_ad_status from t_custom_account where third_account_org = #{orgcode}
+	</select>
+	
+	<select id="getWeixinAndBannerIncome" resultType="com.wxc.adplatform.model.DeviceIncome">
+		select sum(click_income)/100 clickIncome,sum(fans_income)/100 fansIncome from t_device_income_statistic
+		where owner = #{owner} and day = date_sub(curdate(),interval 1 day)
+	</select>
+	
+	<update id="updateAcceptAdStatus">
+		update t_custom_account set accept_ad_status = #{accept_ad_status} where third_account = #{thirdAccount}
+	</update>
+	
+	<select id="getDevicerCount" resultType="java.lang.Double">
+		select sum(click_income + fans_income) / 100 from t_device_income_statistic
+		where owner = #{owner}
+	</select>
+	
+	<update id="resetPwd">
+		update t_custom_account set password = #{newPassword} where id = #{userId}
+	</update>
+	
+	<insert id="addCustomByThird" useGeneratedKeys="true" keyProperty="id">
+		insert into t_custom_account (third_account,third_account_org,regist_time,role,user_type,balance,nick_name,head_img_url,sj_owner) 
+		values (#{thirdAccount},#{thirdAccountOrg},now(),#{role},'WXC',#{balance},#{nickName},#{headImageUrl},#{sj_owner})
+	</insert>
+	
+	<update id="updateDeviceAccount">
+		update t_custom_account set balance=balance-#{balance} where third_account=#{owner} 
+	</update>
+	
+	<update id="updateAccountByPayPrint">
+		update t_custom_account set balance=balance+#{balance} where id=#{userId} 
+	</update>
+</mapper>

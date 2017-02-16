@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.wx.WxPayCallBackDao">
+
+	<resultMap type="com.wxc.adplatform.model.wx.WxPayCallBack" id="wxPayCallBack">
+		<result property="id" column="id" />
+		<result property="is_subscribe" column="is_subscribe" />
+		<result property="appid" column="appid" />
+		<result property="fee_type" column="fee_type" />
+		<result property="nonce_str" column="nonce_str" />
+		<result property="out_trade_no" column="out_trade_no" />
+		<result property="device_info" column="device_info" />
+		<result property="transaction_id" column="transaction_id" />
+		<result property="trade_type" column="trade_type" />
+		<result property="sign" column="sign" />
+		<result property="result_code" column="result_code" />
+		<result property="mch_id" column="mch_id" />
+		<result property="total_fee" column="total_fee" />
+		<result property="time_end" column="time_end" />
+		<result property="openid" column="openid" />
+		<result property="bank_type" column="bank_type" />
+		<result property="return_code" column="return_code" />
+		<result property="cash_fee" column="cash_fee" />
+	</resultMap>
+	
+	<select id="getOrderByCpOrderId" resultMap="wxPayCallBack">
+		select * from t_custom_trade_result where out_trade_no = #{cpOrderId}
+	</select>
+	
+	<insert id="saveWxCallback" parameterType="wxPayCallBack">
+		insert into t_custom_trade_result
+		<set>
+			<trim suffixOverrides=",">
+				<if test="wxPayCallBack.out_trade_no != null and wxPayCallBack.out_trade_no !='' ">
+					out_trade_no = #{wxPayCallBack.out_trade_no},
+				</if>
+				<if test="wxPayCallBack.is_subscribe != null and wxPayCallBack.is_subscribe !='' ">
+					is_subscribe = #{wxPayCallBack.is_subscribe},
+				</if>
+				<if test="wxPayCallBack.appid != null and wxPayCallBack.appid !='' ">
+					appid = #{wxPayCallBack.appid},
+				</if>
+				<if test="wxPayCallBack.fee_type != null and wxPayCallBack.fee_type !='' ">
+					fee_type = #{wxPayCallBack.fee_type},
+				</if>
+				<if test="wxPayCallBack.nonce_str != null and wxPayCallBack.nonce_str !='' ">
+					nonce_str = #{wxPayCallBack.nonce_str},
+				</if>
+				<if test="wxPayCallBack.device_info != null and wxPayCallBack.device_info !='' ">
+					device_info = #{wxPayCallBack.device_info},
+				</if>
+				<if test="wxPayCallBack.transaction_id != null and wxPayCallBack.transaction_id !='' ">
+					transaction_id = #{wxPayCallBack.transaction_id},
+				</if>
+				<if test="wxPayCallBack.trade_type != null and wxPayCallBack.trade_type !='' ">
+					trade_type = #{wxPayCallBack.trade_type},
+				</if>
+				<if test="wxPayCallBack.sign != null and wxPayCallBack.sign !='' ">
+					sign = #{wxPayCallBack.sign},
+				</if>
+				<if test="wxPayCallBack.result_code != null and wxPayCallBack.result_code !='' ">
+					result_code = #{wxPayCallBack.result_code},
+				</if>
+				<if test="wxPayCallBack.mch_id != null and wxPayCallBack.mch_id !='' ">
+					mch_id = #{wxPayCallBack.mch_id},
+				</if>
+				<if test="wxPayCallBack.total_fee != null and wxPayCallBack.total_fee !='' ">
+					total_fee = #{wxPayCallBack.total_fee},
+				</if>
+				<if test="wxPayCallBack.time_end != null and wxPayCallBack.time_end !='' ">
+					time_end = #{wxPayCallBack.time_end},
+				</if>
+				<if test="wxPayCallBack.openid != null and wxPayCallBack.openid !='' ">
+					openid = #{wxPayCallBack.openid},
+				</if>
+				<if test="wxPayCallBack.bank_type != null and wxPayCallBack.bank_type !='' ">
+					bank_type = #{wxPayCallBack.bank_type},
+				</if>
+				<if test="wxPayCallBack.return_code != null and wxPayCallBack.return_code !='' ">
+					return_code = #{wxPayCallBack.return_code},
+				</if>
+				<if test="wxPayCallBack.cash_fee != null and wxPayCallBack.cash_fee !='' ">
+					cash_fee = #{wxPayCallBack.cash_fee},
+				</if>
+			</trim>
+		</set>
+	</insert>
+	
+</mapper>

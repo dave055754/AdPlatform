@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.wx.WxRechargeDao">
+
+	<resultMap type="com.wxc.adplatform.model.wx.WxRecharge" id="wxRecharge">
+		<result property="id" column="id" />
+		<result property="cpOrderId" column="cp_order_id" />
+		<result property="totalPrice" column="total_price" />
+		<result property="tradeTime" column="trade_time" />
+		<result property="tradeStatus" column="trade_status" />
+		<result property="userId" column="user_id" />
+		<result property="payTime" column="pay_time" />
+		<result property="nickName" column="nick_name" />
+		<result property="qrcodeUrl" column="qrcode_url" />
+	</resultMap>
+	
+	<insert id="addCustomTrade" parameterType="com.wxc.adplatform.model.wx.WxRecharge">
+		insert into t_custom_trade
+		<set>
+			<trim suffixOverrides=",">
+				<if test="wxRecharge.cpOrderId != null and wxRecharge.cpOrderId !='' ">
+					cp_order_id = #{wxRecharge.cpOrderId},
+				</if>
+				<if test="wxRecharge.totalPrice != null and wxRecharge.totalPrice !='' ">
+					total_price = #{wxRecharge.totalPrice},
+				</if>
+				<if test="wxRecharge.tradeTime != null and wxRecharge.tradeTime !='' ">
+					trade_time = #{wxRecharge.tradeTime},
+				</if>
+				<if test="wxRecharge.userId != null and wxRecharge.userId !='' ">
+					user_id = #{wxRecharge.userId},
+				</if>
+				<if test="wxRecharge.qrcodeUrl != null and wxRecharge.qrcodeUrl !='' ">
+					qrcode_url = #{wxRecharge.qrcodeUrl},
+				</if>
+			</trim>
+		</set>
+	</insert>
+	
+	<update id="updateRechargeStatus">
+		update t_custom_trade set trade_status = 1,pay_time = #{payTime}
+		where cp_order_id = #{cpOrderId}
+	</update>
+	
+	<select id="getPayStatus" resultMap="wxRecharge">
+		select trade_status,qrcode_url from t_custom_trade where user_id = #{loginUserId} and cp_order_id = #{cpOrderId}
+	</select>
+	
+	<insert id="addFinanceRecharge">
+		insert into t_finance(user_id,amount,type,create_time,transaction_id)
+		values(#{userId},#{total_fee},'RECHARGE',sysdate(),#{transaction_id})
+	</insert>
+	
+	<select id="getUserIdByOutTradeNo" resultType="java.lang.Integer">
+		select user_id from t_custom_trade where cp_order_id = #{out_trade_no}
+	</select>
+	
+</mapper>

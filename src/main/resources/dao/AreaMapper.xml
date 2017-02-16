@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.AreaDao">
+	<resultMap type="com.wxc.adplatform.model.Area" id="area">
+		<id property="code" column="code"/>
+		<result property="provinceCode" column="province_code"/>
+		<result property="cityCode" column="city_code"/>
+		<result property="countyCode" column="county_code"/>
+		<result property="name" column="name"/>
+		<result property="level" column="level"/>
+		<result property="countyName" column="county_name"/>
+	</resultMap>
+
+	<select id="getProvinces" resultMap="area">
+		select code,province_code,name from bas_area where level = 1
+	</select>
+	
+	<select id="getCities" resultMap="area">
+		select code,province_code,name from bas_area where level = 2
+	</select>
+	
+	<select id="getSubAreas"  resultType="com.wxc.adplatform.model.Area">
+		SELECT * from bas_area where 
+         <if test="level == 2">province_code = #{code} and</if>
+         <if test="level == 3">city_code = #{code} and</if>
+         <if test="level == 4">county_code = #{code} and</if>
+         level = #{level}
+	</select>
+	
+	<select id="getAreaById"  resultType="com.wxc.adplatform.model.Area">
+		SELECT * from bas_area where 
+         code = #{code}
+	</select>
+	
+	<select id="getAreaName"  resultType="String">
+		SELECT name from bas_area where 
+         <if test="level == 1">province_code = #{code} and</if>
+         <if test="level == 2">city_code = #{code} and</if>
+         <if test="level == 3">county_code = #{code} and</if>
+         <if test="level == 4">area_code = #{code} and</if>
+         level = #{level}
+	</select>
+	
+	<!-- 
+	<select id="getProvinceCity" resultType="com.wxc.adplatform.model.Area">
+		select ba.province_code provinceCode,ba.name provinceName,baa.city_code cityCode,baa.name cityName
+		from bas_area ba join bas_area baa on ba.level = 1 and baa.level = 2
+		and ba.province_code = baa.province_code
+	</select>
+	 -->
+	
+	<select id="getCodeByCity" resultType="java.lang.String">
+		select code from bas_area ba where name = #{city}
+	</select>
+	
+	<select id="getProvinceCodeByArea" resultType="java.lang.String">
+		select province_code from bas_area where province_code = #{area} and level = 1
+	</select>
+	
+	<select id="getProvinceCodeByCityArea" resultType="java.lang.String">
+		select province_code from bas_area where code = #{city_code} limit 1
+	</select>
+	
+	<select id="getCityCodeListByProvinceCode" resultMap="area">
+		select city_code from bas_area where province_code = #{provinceCode} and level = 2
+	</select>
+	
+</mapper>

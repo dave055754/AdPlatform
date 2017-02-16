@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.wxc.adplatform.dao.AdvertiserDao">
+
+	<resultMap type="com.wxc.adplatform.model.Custom" id="balance">
+		<id property="id" column="id" />
+		<result property="balance" column="balance" />
+		<result property="phoneNumber" column="user_name" />
+		<result property="yesterdayCost" column="yesterday_cost" />
+		<result property="accessToken" column="user_token" />
+		<result property="nickName" column="nick_name" />
+		<result property="registTime" column="regist_time" />
+	</resultMap>
+	
+	<resultMap type="com.wxc.adplatform.model.AdVO" id="adResultMapper">
+		<result property="id" column="id" />
+		<result property="uuid" column="uuid" />
+		<result property="appid" column="appid" />
+		<result property="name" column="name" />
+		<result property="startDate" column="start_date" />
+		<result property="endDate" column="end_date" />
+		<result property="platform" column="platform" />
+		<result property="adType" column="adtype" />
+		<result property="adScheduleId" column="ad_schedule_id" />
+		<result property="adUrl" column="ad_url" />
+		<result property="linkUrl" column="link_url" />
+		<result property="area" column="area" />
+		<result property="tag" column="tag" />
+		<result property="chargeType" column="charge_type" />
+		<result property="charge" column="charge" />
+		<result property="checkflag" column="checkflag" />
+		<result property="reason" column="reason" />
+		<result property="createUserId" column="create_user_id" />
+		<result property="updateUserId" column="update_user_id" />
+		<result property="createTime" column="create_time" />
+		<result property="updateTime" column="update_time" />
+		
+	</resultMap>
+
+	<select id="findFinanceDetails" resultType="com.wxc.adplatform.model.Finance">
+		select * from	t_finance 
+		where user_id = #{userId} and 	(type != 'INCOME')
+		order by create_time desc limit #{offset}, #{pageSize}
+	</select>
+
+	<select id="countDetails" resultType="Integer">
+		select count(id) from 
+		t_finance where user_id = #{userId} and (type != 'INCOME')
+	</select>
+
+	<select id="findBalance" resultMap="balance">
+		select * from
+		t_custom_account where id = #{userId}
+	</select>
+	
+	<select id="publishs" resultMap="balance">
+		select * from
+		t_custom_account where id = #{userId}
+	</select>
+	
+	<select id="countPublishList" resultType="Integer">
+		select count(DISTINCT(day)) from
+		t_user_action_statistic where ad_id = #{adId} and day between #{startDate} and #{endDate}
+	</select>
+	
+	<select id="publishList" resultType="com.wxc.adplatform.model.UserStatisticBean">
+	    select sum(exposure) as exposure_count,sum(click) as click_count,sum(fans) as fans_count,
+        sum(exposure_cost) as exposure_cost,sum(click_cost) as click_cost,sum(fans_cost) as fans_cost,`day` from t_user_action_statistic 
+		where ad_id = #{adId} and day between #{startDate} and #{endDate} group by `day`
+	</select>
+	
+	<select id="countNotices" resultType="Integer">
+		select count(*) from t_notice where user_id=#{userId} and notice_type in (1,2) or notice_type = 0
+	</select>
+	
+	<select id="findNotices" resultType="com.wxc.adplatform.model.NoticesBean">
+		select * from t_notice where user_id=#{userId} and notice_type in (1,2) or notice_type = 0 order by time desc
+	</select>
+	
+	<select id="countNoticesStatus" resultType="Integer">
+		select count(id) from t_notice_status where user_id = #{userId}
+	</select>
+	
+	<insert id="addNoticesTimestamp">
+		insert into t_notice_status(user_id,timestamp) values(#{userId}, now())
+	</insert>
+	
+	<select id="findTimestamp" resultType="Date">
+		select timestamp from t_notice_status where user_id = #{userId}
+	</select>
+	
+	<select id="findNoticesByTime" resultType="Integer">
+		select count(*) from t_notice where ((user_id = #{userId} and notice_type in
+		(1,2)) or notice_type = 0) and time BETWEEN #{timeStamp} and NOW()
+	</select>
+	
+	<update id="updateNoticesTimestamp">
+		update t_notice_status set timestamp = NOW() where user_id = #{userId}
+	</update>
+	
+	<select id="findStatisticsList" resultType="com.wxc.adplatform.model.UserStatisticBean">
+		select  sum(t1.exposure) as exposure_count,sum(t1.click) as click_count,sum(t1.fans) as fans_count,
+		sum(t1.exposure_cost) as exposure_cost,sum(t1.click_cost) as click_cost,sum(t1.fans_cost) as fans_cost,t1.`day` from
+		t_user_action_statistic t1,t_ad t2 where t1.ad_id= t2.id and t2.create_user_id = #{userId} and day 
+		between #{startDate} and #{endDate} group by t1.day
+	</select>
+	
+<!-- 	public List<Map<String, Object>> wxProvince(
+			@Param("adSchedule_id") Integer adSchedule_id,
+			@Param("startDate")String startDate,
+			@Param("endDate")String endDate, 
+			@Param("loginId")Integer loginId); -->
+	
+	<select id="wxProvince" resultType="java.util.Map">
+		select count(t1.id) as peopleCount, t3.province_code as provinceCode,(select name from bas_area  where  level =1 and province_code = provinceCode) as provinceName
+		from t_billing_record t1,bas_area t3, t_ad t4
+		where t1.city_code = t3.city_code  and  t1.ad_id = t4.id
+        AND t3.level = 2
+        <if test="startDate != null and startDate != ''"> and t1.billing_date between #{startDate} and #{endDate} </if>		
+        <if test="adSchedule_id != null and adSchedule_id != 0"> and t4.ad_schedule_id  = #{adSchedule_id} </if>
+        <if test="loginId != null and loginId != 0"> and t1.user_id  = #{loginId} </if>
+		GROUP BY t3.province_code
+	</select>
+	
+	<select id="wxSex" resultType="java.util.Map">
+		select count(t1.id) as peopleCount, t2.sex as sexType
+		from t_billing_record t1,t_user_wx t2 ,t_ad t4
+		where t1.open_id= t2.openid  and t1.ad_id = t4.id
+        <if test="startDate != null and startDate != ''"> and t1.billing_date between #{startDate} and #{endDate} </if>		
+        <if test="adSchedule_id != null and adSchedule_id != 0"> and t4.ad_schedule_id  = #{adSchedule_id} </if>
+         <if test="loginId != null and loginId != 0"> and t1.user_id  = #{loginId} </if>
+		GROUP BY t2.sex
+	</select>
+	
+	<select id="wxOsType" resultType="java.util.Map">
+		select count(t1.id) as peopleCount, t2.os_type as osType 
+		from t_billing_record t1,t_user_wx t2 ,t_ad t4
+		where t1.open_id= t2.openid  and t1.ad_id = t4.id
+        <if test="startDate != null and startDate != ''"> and t1.billing_date between #{startDate} and #{endDate} </if>		
+        <if test="adSchedule_id != null and adSchedule_id != 0"> and t4.ad_schedule_id  = #{adSchedule_id} </if>
+         <if test="loginId != null and loginId != 0"> and t1.user_id  = #{loginId} </if>
+		GROUP BY  t2.os_type 
+	</select>
+	
+</mapper>
