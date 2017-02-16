@@ -1,0 +1,6 @@
+/target/
+/.settings/
+/logs/
+/release/
+/.classpath
+/.project
